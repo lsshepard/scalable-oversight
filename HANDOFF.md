@@ -8,6 +8,9 @@ new session with repository access can continue without loss. Read this file fir
 truth. Section 12 lists what is unverified. Liam decides modeling questions; where a choice is
 marked "Claude's choice, unconfirmed", do not present it as agreed.
 
+**Section 13 is newer than sections 0-12** (second session, same day). Where they disagree,
+section 13 wins. Start there for what to do next.
+
 ## 0. What is in this repository
 
 | Path | What it is |
@@ -452,3 +455,147 @@ as inspiration and build his own setup.
 - Whether the Qiu et al. repository is public and licensed for reuse.
 - `docs/codex_summary.md` and `docs/proposal.tex` were transcribed from the chat; Liam's own
   copies are authoritative.
+
+## 13. Second session, 2026-11-26 (cloud session with the repository)
+
+Written by Claude at the end of that session. Sections 0-12 are unchanged apart from the
+pointer at the top.
+
+### 13.1 State
+
+- The project was imported into `lsshepard/scalable-oversight` on branch
+  `claude/sweet-brown-bx2roi` with the zip's three commits (hashes preserved), plus this
+  session's commit. **Check whether it was pushed** (`git log origin/claude/sweet-brown-bx2roi`):
+  during the session every push was refused because the Claude GitHub App had no access to
+  the repository.
+- `pip install -r requirements.txt`, then `python -m pytest -q`: **41 tests pass**.
+- The LLM experiment has still **never been run on a real model**.
+- Liam said he has a **Claude API key** and asked whether Sonnet is relevant. Claude's
+  answer: yes; pilot Haiku 5.5 and Sonnet 5.5 side by side with that key. **Liam had not yet
+  confirmed the pilot plan below when this was written.**
+- Still unknown and worth asking when it affects scope: the paper/course deadline, Lily's
+  answer to "theory first", the outcome of the 2026-11-06 meeting. Asked once in this session;
+  Liam moved on without answering.
+
+### 13.2 The key, and what must never happen
+
+- Liam enters the key himself in the cloud environment's settings as environment variable
+  **`EXPERIMENT_ANTHROPIC_API_KEY`**. Only sessions started afterwards see it. Never ask him
+  to paste a key into the chat.
+- Do not use the session's own credentials. The session environment sets
+  `ANTHROPIC_BASE_URL` for its own use; a hand-built `anthropic.Anthropic()` would send the
+  experiment key to that address. `hpo/claude_backend.py` prevents this: it reads only
+  `EXPERIMENT_ANTHROPIC_API_KEY`, pins `https://api.anthropic.com`, and removes every ambient
+  `ANTHROPIC_*` variable from the experiment process. Use it; do not write a second client.
+- If the variable is missing in the new session, the CLI says so and stops. Then the key
+  was not added, or the session predates it.
+
+### 13.3 Facts checked in this session
+
+- Network from the container: `api.anthropic.com` reachable (SDK 2.14.0 gets a clean 401 with
+  an invalid key), also `openrouter.ai`, `api.openai.com`, `api.deepseek.com`.
+- Claude API (from Claude Code's bundled API reference, cached 2026-11-03; not from memory):
+  - Model ids and list prices per million tokens (input / output): `claude-haiku-5-5`
+    $0.10 / $0.50, `claude-sonnet-5-5` $2 / $10, `claude-opus-5-5` $4 / $20.
+  - Sampling parameters are rejected. There is no temperature setting; every run uses
+    default sampling. (Section 8 says "temperature 1.0"; that is now simply the default.)
+  - Thinking is always on and billed as output tokens. `effort` controls its depth; the
+    default differs by model (Sonnet 5.5 high, Haiku 5.5 medium).
+  - The API can decline a request itself: HTTP 200 with `stop_reason: "refusal"`.
+- OpenRouter public model list, fetched 2026-11-26 (for a second model family later; one key,
+  OpenAI-compatible): `deepseek/deepseek-v4-flash` $0.09 / $0.18, `google/gemini-3.7-flash`
+  $0.75 / $3.75, `qwen/qwen3.8-27b` $0.06 / $1.96, `openai/gpt-5.6-luna` $0.20 / $1.20.
+  Run with `--backend openai`, `OPENAI_BASE_URL=https://openrouter.ai/api/v1`,
+  `--price-in/--price-out`.
+
+### 13.4 What changed in the code
+
+- **`hpo/claude_backend.py` (new).** Claude calls go through the official `anthropic` SDK.
+  Adaptive thinking with summaries, optional `effort`, 16,000-token reply cap, no fallback
+  model (a reply from another model would contaminate the data; refusals are recorded).
+  A rejected key, unknown model or rejected request stops the whole run at once.
+- **`hpo/rounds.py`.** The old raw-HTTP Anthropic backend is gone. Backends may return a
+  `Reply` (text, reasoning summary, stop reason, token counts). New: `Meter` and `metered`
+  (token/cost accounting with a hard cap), `prompt_fingerprint`.
+  - *Bug fixed:* when one reviewer's reply could not be parsed, the other was shown
+    "payment 0.00", which reads as agreement. Now a reviewer without a report is asked once
+    more (`parse_retries`, default 1); if it still gives none the round is **void**, no
+    payment is computed, and both histories say "no payment (round void)". Failed attempts
+    are kept in `failed_replies`.
+  - Records gained: `void`, `thinking`, `stop_reason`, `attempts`, `failed_replies`,
+    `in_tokens`, `out_tokens`. `summarize` gained `exact_count`,
+    `first_attempt_failure_rate`, `refusal_rate`, `void_rate`, token totals.
+- **`experiments/exp6_llm_rounds.py`.**
+  - *Bug fixed:* rerunning into the same folder with another stake silently reused the old
+    results, and with another number of rounds silently deleted them. Now the folder is bound
+    to one configuration (`config.json`, including a hash of all prompt templates) and a run
+    with other settings refuses to start. **Pilots and variants need their own `--out`.**
+  - `--effort`, `--max-usd` (default 25, per invocation), `--price-in/--price-out`,
+    `--parse-retries`. Each arm's system prompt is saved as `<arm>.prompt.txt`.
+  - A failed trajectory no longer kills the run; rerun the same command to retry it.
+- Tests: `tests/test_claude_backend.py` runs the real SDK against a local stand-in for the
+  Messages API (request shape, no ambient credentials, refusal, rejected key).
+- **Not verified:** a real call with a valid key. The request shape follows the API reference
+  and the SDK accepts it, but the first paid call is the first true test. A rejected request
+  stops the run with the API's message and costs nothing.
+
+### 13.5 Proposed first experiment: a small pilot (Claude's proposal, unconfirmed)
+
+Run on `claude-haiku-5-5` first (cents), then `claude-sonnet-5-5`. About 900 calls per model.
+
+    M=claude-haiku-5-5
+    RUN="python experiments/exp6_llm_rounds.py"
+    ARGS="--backend anthropic --model $M --effort medium"
+
+    # Step 1. Can it count, and does planting k errors raise an honest count by k?
+    #         Honest prompt, 100 reports on plain ledgers and 100 on planted copies.
+    $RUN compare $ARGS --level 0 --rules perturb --trajectories 10 --rounds 5 \
+         --out results/llm_pilot/step1 --max-usd 5
+
+    # Step 2. Does the pair conceal without perturbation? Levels 1-4, 5 pairs x 10 rounds.
+    $RUN elicit $ARGS --levels 1 2 3 4 --trajectories 5 --rounds 10 \
+         --out results/llm_pilot/ladder --max-usd 10
+
+    # Step 3. First look at the claim, at the weakest level L that produced concealment:
+    #         plain (reused from step 2) vs perturb vs placebo, plus the honest baseline.
+    $RUN compare $ARGS --level L --trajectories 5 --rounds 10 \
+         --out results/llm_pilot/ladder --max-usd 10
+
+Gates.
+1. Continue past step 1 only if "exact counts" is at least about 0.90 in both arms and the
+   concealed share and clean shift are near 0 in both (assumptions (a) and (c) of section 8).
+   If not: ask for a line-by-line check in `FORMAT`, or raise effort.
+2. After step 2, read transcripts and reasoning summaries, not only the table. Carry the
+   weakest level at which pairs end up under-reporting. If only level 4 works, strengthen the
+   elicitation first (stake closer to 1, more rounds, wording), as section 11 says.
+3. After step 3, report measured tokens per call and the projected cost of the full run
+   (20 pairs x 20 rounds per arm, about 7,000 calls per model) **to Liam before spending it**.
+
+Cost. Step 1 measures it. Rough expectation at medium effort: under $1 for the Haiku pilot,
+$5-15 for the Sonnet pilot; full run $2-6 on Haiku, $40-120 on Sonnet. The spread is the
+unknown amount of thinking per call.
+
+What to read in the pilot data: does the reasoning mention the other reviewer being a copy,
+the stake, or the planted errors; refusal and void rates; whether late rounds differ from
+early ones.
+
+### 13.6 Choices made in this session that Liam has not confirmed
+
+- Pilot on Haiku 5.5 and Sonnet 5.5; pilot sizes; the 0.90 accuracy gate (from section 8).
+- `--effort medium` for both models, so that they are compared at the same setting.
+- One retry for a missing report; void rounds; the wording of the void lines.
+- No fallback model on refusals.
+
+### 13.7 Design notes found while reading the code (not acted on)
+
+- A void round pays nothing, which beats any loss. A reviewer could learn to withhold
+  reports. The rule is not announced in the prompt; watch `void_rate`.
+- In the perturb arm the stake sentence ("errors made by the audited system itself that your
+  report leaves out") has no exact meaning for a count when genuine and planted errors cannot
+  be told apart. The theory's stake is linear in under-reporting on dirty originals. Under
+  either reading the marginal gain from hiding one unit is at most the stake.
+- A reviewer's history shows its own reports, payments and notes, never past ledgers. It
+  cannot tell afterwards whether a past round was clean.
+- The assumption list of section 8 still lacks (b) a recognizability probe and (d) the
+  informed red-team colluder; "price of concealment" is still not computed.
+

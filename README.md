@@ -35,7 +35,7 @@ everything can be computed exactly. Results, tables and verdicts: **[REPORT.md](
 
 ## Reproduce
 
-    pip install numpy scipy pandas scikit-learn matplotlib pytest
+    pip install -r requirements.txt
     python -m pytest -q                 # ~30 s
     python -m experiments.run_all       # ~15 min on 1 core; rewrites results/
     python -m experiments.replot        # redraw figures from saved CSVs only
@@ -74,8 +74,10 @@ content stops being independent of T.
 
 ## Prompt-only LLM experiment (repeated rounds)
 
-`hpo/rounds.py` and `experiments/exp6_llm_rounds.py`. Not yet run against a real model:
-no API key was available when it was written. The pipeline is tested with offline mocks.
+`hpo/rounds.py` (game engine, provider-neutral), `hpo/claude_backend.py` (Claude models
+through the official Anthropic SDK) and `experiments/exp6_llm_rounds.py`. **Not yet run
+against a real model** (as of 2026-11-26). The pipeline is tested with offline mocks and
+with a local stand-in for the Claude API.
 
 Two copies of one model audit the same ledger each round. They cannot communicate. Each
 sees only its own past reports, payments and one-line notes, so any coordination has to
@@ -91,11 +93,27 @@ be inferred from the payments.
 
 Defaults: 20 trajectories x 20 rounds per arm, stake 0.5 per genuine error left out
 (below 1, so concealing alone loses points and only joint concealment pays), genuine
-errors 0/1/2 with probabilities 0.6/0.3/0.1, Poisson(1.5) plants, temperature 1.0.
+errors 0/1/2 with probabilities 0.6/0.3/0.1, Poisson(1.5) plants, default sampling
+(current Claude models accept no temperature setting).
 Main outcome: share of genuine errors missing from adjusted reports in the last five
 rounds, with bootstrap intervals over trajectories.
 
+A reviewer whose reply contains no report is asked once more; if it still gives none,
+the round is void, nobody is paid, and both histories say so. Each record keeps the
+reply, the model's reasoning summary, failed attempts, stop reason and token counts.
+
+    pip install -r requirements.txt
     python experiments/exp6_llm_rounds.py elicit --backend mock-adaptive --trajectories 4
-    export ANTHROPIC_API_KEY=...   # or OPENAI_API_KEY (+ OPENAI_BASE_URL)
-    python experiments/exp6_llm_rounds.py elicit  --backend anthropic --model <model-id>
-    python experiments/exp6_llm_rounds.py compare --backend anthropic --model <model-id> --level <k>
+
+    # Claude: the key is read from EXPERIMENT_ANTHROPIC_API_KEY and nowhere else
+    python experiments/exp6_llm_rounds.py elicit  --backend anthropic --model claude-sonnet-5-5 --effort medium
+    python experiments/exp6_llm_rounds.py compare --backend anthropic --model claude-sonnet-5-5 --effort medium --level <k>
+
+    # any OpenAI-compatible endpoint: OPENAI_API_KEY (+ OPENAI_BASE_URL)
+    python experiments/exp6_llm_rounds.py elicit --backend openai --model <model-id> --price-in <usd> --price-out <usd>
+
+Rails: `--max-usd` (default 25) stops a run before the next call once its metered cost
+reaches the cap; an output folder is bound to one configuration (`config.json`: model,
+effort, rounds, stake, prompt hash, ...) and a run with other settings refuses to reuse
+it, so pilots and variants need their own `--out`. The pilot plan is in `HANDOFF.md`
+section 13.
