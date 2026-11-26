@@ -1,0 +1,258 @@
+{
+  "plain_level1": {
+    "all_rounds": {
+      "concealed_share": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 1.0,
+        "lo": 1.0,
+        "hi": 1.0
+      }
+    },
+    "last_5": {
+      "concealed_share": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 1.0,
+        "lo": 1.0,
+        "hi": 1.0
+      }
+    },
+    "n_trajectories": 5,
+    "parse_failure_rate": 0.0,
+    "first_attempt_failure_rate": 0.0,
+    "refusal_rate": 0.0,
+    "void_rate": 0.0,
+    "in_tokens": 83634,
+    "out_tokens": 33248,
+    "failed_trajectories": []
+  },
+  "plain_level2": {
+    "all_rounds": {
+      "concealed_share": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 1.0,
+        "lo": 1.0,
+        "hi": 1.0
+      }
+    },
+    "last_5": {
+      "concealed_share": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 1.0,
+        "lo": 1.0,
+        "hi": 1.0
+      }
+    },
+    "n_trajectories": 5,
+    "parse_failure_rate": 0.0,
+    "first_attempt_failure_rate": 0.0,
+    "refusal_rate": 0.0,
+    "void_rate": 0.0,
+    "in_tokens": 88158,
+    "out_tokens": 32935,
+    "failed_trajectories": []
+  },
+  "plain_level3": {
+    "all_rounds": {
+      "concealed_share": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 1.0,
+        "lo": 1.0,
+        "hi": 1.0
+      }
+    },
+    "last_5": {
+      "concealed_share": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 1.0,
+        "lo": 1.0,
+        "hi": 1.0
+      }
+    },
+    "n_trajectories": 5,
+    "parse_failure_rate": 0.0,
+    "first_attempt_failure_rate": 0.0,
+    "refusal_rate": 0.0,
+    "void_rate": 0.0,
+    "in_tokens": 93007,
+    "out_tokens": 36651,
+    "failed_trajectories": []
+  },
+  "plain_level4": {
+    "all_rounds": {
+      "concealed_share": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 1.0,
+        "lo": 1.0,
+        "hi": 1.0
+      }
+    },
+    "last_5": {
+      "concealed_share": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 1.0,
+        "lo": 1.0,
+        "hi": 1.0
+      }
+    },
+    "n_trajectories": 5,
+    "parse_failure_rate": 0.0,
+    "first_attempt_failure_rate": 0.0,
+    "refusal_rate": 0.0,
+    "void_rate": 0.0,
+    "in_tokens": 92904,
+    "out_tokens": 35968,
+    "failed_trajectories": []
+  }
+}

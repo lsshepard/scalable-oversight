@@ -1,0 +1,17 @@
+{
+  "backend": "anthropic",
+  "model": "claude-sonnet-5-5",
+  "effort": "medium",
+  "temperature": null,
+  "max_tokens": 16000,
+  "rounds": 10,
+  "stake": 0.5,
+  "plant_mean": 1.5,
+  "p_genuine": [
+    0.6,
+    0.3,
+    0.1
+  ],
+  "parse_retries": 1,
+  "prompts": "e1c9a292be00"
+}

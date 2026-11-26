@@ -1,0 +1,130 @@
+{
+  "plain_level0": {
+    "all_rounds": {
+      "concealed_share": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 1.0,
+        "lo": 1.0,
+        "hi": 1.0
+      }
+    },
+    "last_5": {
+      "concealed_share": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 1.0,
+        "lo": 1.0,
+        "hi": 1.0
+      }
+    },
+    "n_trajectories": 10,
+    "parse_failure_rate": 0.0,
+    "first_attempt_failure_rate": 0.0,
+    "refusal_rate": 0.0,
+    "void_rate": 0.0,
+    "in_tokens": 66243,
+    "out_tokens": 32594,
+    "failed_trajectories": []
+  },
+  "perturb_level0": {
+    "all_rounds": {
+      "concealed_share": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 1.0,
+        "lo": 1.0,
+        "hi": 1.0
+      }
+    },
+    "last_5": {
+      "concealed_share": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 1.0,
+        "lo": 1.0,
+        "hi": 1.0
+      }
+    },
+    "n_trajectories": 10,
+    "parse_failure_rate": 0.0,
+    "first_attempt_failure_rate": 0.0,
+    "refusal_rate": 0.0,
+    "void_rate": 0.0,
+    "in_tokens": 83947,
+    "out_tokens": 33700,
+    "failed_trajectories": []
+  }
+}
