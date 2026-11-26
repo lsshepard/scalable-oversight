@@ -1,0 +1,10 @@
+{
+  "monotone_increasing": true,
+  "largest_step": 0.4429245418733423,
+  "largest_step_at_p": 0.99,
+  "max_slope": 44.29245418733419,
+  "max_slope_at_p": 0.99,
+  "gap_between_p_0p99999_and_1": 0.0001319598966156299,
+  "concealment_at_p0": 0.03667343230128027,
+  "concealment_at_p1": 1.35
+}

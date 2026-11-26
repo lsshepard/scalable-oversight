@@ -1,0 +1,391 @@
+
+===== experiments.exp1_menu =====
+
+**agreement_only** (p=0.5)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0000 ± 0.0000 | posterior_shade_10 | -0.0014 ± 0.0000 | yes (strict) |
+| hide_one | 0.2798 ± 0.0018 | shift_minus_one | +0.1011 ± 0.0020 | no |
+| shift_minus_one | 0.0000 ± 0.0000 | hide_one | -0.1802 ± 0.0009 | yes (strict) |
+| hide_unrecognized | 0.1168 ± 0.0016 | posterior_shade_50 | +0.0224 ± 0.0015 | no |
+| posterior_shade_50 | 0.0292 ± 0.0004 | posterior_shade_10 | +0.0004 ± 0.0005 | yes (strict) |
+| posterior_shade_10 | 0.0012 ± 0.0000 | honest | -0.0003 ± 0.0000 | yes (strict) |
+| always_zero | 2.9974 ± 0.0231 | shift_minus_one | +0.6560 ± 0.0384 | no |
+| report_max | 2.9974 ± 0.0231 | over_one | -741.3568 ± 0.8088 | yes (strict) |
+| over_one | 0.0000 ± 0.0000 | honest | -1.0000 ± 0.0000 | yes (strict) |
+
+**agreement_only+eps** (p=0.5)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0348 ± 0.0002 | posterior_shade_10 | -0.0009 ± 0.0000 | yes (strict) |
+| hide_one | 0.2982 ± 0.0019 | shift_minus_one | +0.1047 ± 0.0020 | no |
+| shift_minus_one | 0.0148 ± 0.0002 | hide_one | -0.1838 ± 0.0009 | yes (strict) |
+| hide_unrecognized | 0.1467 ± 0.0017 | posterior_shade_50 | +0.0199 ± 0.0015 | no |
+| posterior_shade_50 | 0.0616 ± 0.0005 | posterior_shade_10 | -0.0016 ± 0.0005 | yes (strict) |
+| posterior_shade_10 | 0.0355 ± 0.0002 | honest | -0.0008 ± 0.0000 | yes (strict) |
+| always_zero | 2.9974 ± 0.0231 | shift_minus_one | +0.6412 ± 0.0383 | no |
+| report_max | 3.5974 ± 0.0231 | over_one | -740.8117 ± 0.8089 | yes (strict) |
+| over_one | 0.0548 ± 0.0002 | honest | -0.9800 ± 0.0000 | yes (strict) |
+
+**agreement_only+stake** (p=0.5)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0000 ± 0.0000 | posterior_shade_10 | +0.0007 ± 0.0000 | no |
+| hide_one | 0.2401 ± 0.0021 | shift_minus_one | +0.1011 ± 0.0020 | no |
+| shift_minus_one | -0.0397 ± 0.0007 | hide_one | -0.1802 ± 0.0009 | yes (strict) |
+| hide_unrecognized | 0.0959 ± 0.0016 | posterior_shade_50 | +0.0119 ± 0.0015 | no |
+| posterior_shade_50 | 0.0187 ± 0.0004 | posterior_shade_10 | -0.0080 ± 0.0006 | yes (strict) |
+| posterior_shade_10 | -0.0009 ± 0.0000 | honest | -0.0024 ± 0.0000 | yes (strict) |
+| always_zero | 2.8883 ± 0.0221 | shift_minus_one | +0.5867 ± 0.0385 | no |
+| report_max | 4.0804 ± 0.0343 | over_one | -740.3135 ± 0.8183 | yes (strict) |
+| over_one | 0.0397 ± 0.0007 | honest | -0.9603 ± 0.0007 | yes (strict) |
+
+**agreement_only+stake+eps** (p=0.5)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0348 ± 0.0002 | posterior_shade_10 | +0.0012 ± 0.0000 | no |
+| hide_one | 0.2585 ± 0.0021 | shift_minus_one | +0.1047 ± 0.0020 | no |
+| shift_minus_one | -0.0249 ± 0.0007 | hide_one | -0.1838 ± 0.0009 | yes (strict) |
+| hide_unrecognized | 0.1258 ± 0.0017 | posterior_shade_50 | +0.0095 ± 0.0015 | no |
+| posterior_shade_50 | 0.0511 ± 0.0005 | posterior_shade_10 | -0.0100 ± 0.0006 | yes (strict) |
+| posterior_shade_10 | 0.0334 ± 0.0002 | honest | -0.0029 ± 0.0000 | yes (strict) |
+| always_zero | 2.8883 ± 0.0221 | shift_minus_one | +0.5718 ± 0.0384 | no |
+| report_max | 4.6804 ± 0.0343 | over_one | -739.7684 ± 0.8183 | yes (strict) |
+| over_one | 0.0946 ± 0.0007 | honest | -0.9403 ± 0.0007 | yes (strict) |
+
+**floor_only** (p=0.5)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0000 ± 0.0000 | report_max | +0.0000 ± 0.0000 | yes (weak) |
+| hide_one | 0.6211 ± 0.0031 | honest | +0.6211 ± 0.0031 | no |
+| shift_minus_one | 0.8013 ± 0.0034 | honest | +0.8013 ± 0.0034 | no |
+| hide_unrecognized | 0.0706 ± 0.0017 | honest | +0.0706 ± 0.0017 | no |
+| posterior_shade_50 | 0.0176 ± 0.0004 | honest | +0.0176 ± 0.0004 | no |
+| posterior_shade_10 | 0.0007 ± 0.0000 | honest | +0.0007 ± 0.0000 | no |
+| always_zero | 3.7252 ± 0.0450 | honest | +3.7252 ± 0.0450 | no |
+| report_max | 0.0000 ± 0.0000 | honest | +0.0000 ± 0.0000 | yes (weak) |
+| over_one | 0.0000 ± 0.0000 | honest | +0.0000 ± 0.0000 | yes (weak) |
+
+**floor_only+eps** (p=0.5)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0348 ± 0.0002 | posterior_shade_10 | -0.0002 ± 0.0000 | yes (strict) |
+| hide_one | 0.6396 ± 0.0031 | honest | +0.6047 ± 0.0031 | no |
+| shift_minus_one | 0.8162 ± 0.0034 | honest | +0.7813 ± 0.0034 | no |
+| hide_unrecognized | 0.1005 ± 0.0018 | honest | +0.0656 ± 0.0017 | no |
+| posterior_shade_50 | 0.0500 ± 0.0005 | honest | +0.0151 ± 0.0004 | no |
+| posterior_shade_10 | 0.0350 ± 0.0002 | honest | +0.0002 ± 0.0000 | no |
+| always_zero | 3.7252 ± 0.0450 | honest | +3.6904 ± 0.0449 | no |
+| report_max | 0.6000 ± 0.0000 | honest | +0.5652 ± 0.0002 | no |
+| over_one | 0.0548 ± 0.0002 | honest | +0.0200 ± 0.0000 | no |
+
+**floor_only+stake** (p=0.5)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0000 ± 0.0000 | posterior_shade_10 | +0.0014 ± 0.0001 | no |
+| hide_one | 0.5814 ± 0.0038 | posterior_shade_10 | +0.5828 ± 0.0037 | no |
+| shift_minus_one | 0.7616 ± 0.0041 | posterior_shade_10 | +0.7630 ± 0.0040 | no |
+| hide_unrecognized | 0.0497 ± 0.0020 | posterior_shade_10 | +0.0511 ± 0.0020 | no |
+| posterior_shade_50 | 0.0072 ± 0.0006 | posterior_shade_10 | +0.0085 ± 0.0005 | no |
+| posterior_shade_10 | -0.0014 ± 0.0001 | honest | -0.0014 ± 0.0001 | yes (strict) |
+| always_zero | 3.6161 ± 0.0455 | posterior_shade_10 | +3.6175 ± 0.0455 | no |
+| report_max | 1.0830 ± 0.0184 | posterior_shade_10 | +1.0844 ± 0.0185 | no |
+| over_one | 0.0397 ± 0.0007 | posterior_shade_10 | +0.0411 ± 0.0007 | no |
+
+**floor_only+stake+eps** (p=0.5)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0348 ± 0.0002 | posterior_shade_10 | +0.0019 ± 0.0001 | no |
+| hide_one | 0.5998 ± 0.0038 | posterior_shade_10 | +0.5669 ± 0.0037 | no |
+| shift_minus_one | 0.7764 ± 0.0041 | posterior_shade_10 | +0.7435 ± 0.0040 | no |
+| hide_unrecognized | 0.0795 ± 0.0020 | posterior_shade_10 | +0.0466 ± 0.0019 | no |
+| posterior_shade_50 | 0.0395 ± 0.0006 | posterior_shade_10 | +0.0065 ± 0.0005 | no |
+| posterior_shade_10 | 0.0330 ± 0.0002 | honest | -0.0019 ± 0.0001 | yes (strict) |
+| always_zero | 3.6161 ± 0.0455 | posterior_shade_10 | +3.5832 ± 0.0454 | no |
+| report_max | 1.6830 ± 0.0184 | posterior_shade_10 | +1.6501 ± 0.0185 | no |
+| over_one | 0.0946 ± 0.0007 | posterior_shade_10 | +0.0616 ± 0.0007 | no |
+
+**both** (p=0.5)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0000 ± 0.0000 | posterior_shade_10 | -0.0021 ± 0.0000 | yes (strict) |
+| hide_one | 0.9009 ± 0.0039 | hide_unrecognized | +0.2991 ± 0.0039 | no |
+| shift_minus_one | 0.8013 ± 0.0034 | hide_unrecognized | +0.0858 ± 0.0025 | no |
+| hide_unrecognized | 0.1874 ± 0.0026 | posterior_shade_50 | +0.0754 ± 0.0026 | no |
+| posterior_shade_50 | 0.0468 ± 0.0006 | posterior_shade_10 | +0.0173 ± 0.0009 | no |
+| posterior_shade_10 | 0.0019 ± 0.0000 | honest | +0.0004 ± 0.0000 | no |
+| always_zero | 6.7227 ± 0.0583 | shift_minus_one | +3.5800 ± 0.0780 | no |
+| report_max | 2.9974 ± 0.0231 | over_one | -741.3568 ± 0.8088 | yes (strict) |
+| over_one | 0.0000 ± 0.0000 | honest | -1.0000 ± 0.0000 | yes (strict) |
+
+**both+eps** (p=0.5)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0348 ± 0.0002 | posterior_shade_10 | -0.0016 ± 0.0000 | yes (strict) |
+| hide_one | 0.9194 ± 0.0039 | hide_unrecognized | +0.2877 ± 0.0039 | no |
+| shift_minus_one | 0.8162 ± 0.0034 | hide_unrecognized | +0.0708 ± 0.0025 | no |
+| hide_unrecognized | 0.2173 ± 0.0027 | posterior_shade_50 | +0.0729 ± 0.0026 | no |
+| posterior_shade_50 | 0.0792 ± 0.0008 | posterior_shade_10 | +0.0153 ± 0.0009 | no |
+| posterior_shade_10 | 0.0362 ± 0.0002 | honest | -0.0001 ± 0.0000 | yes (strict) |
+| always_zero | 6.7227 ± 0.0583 | shift_minus_one | +3.5651 ± 0.0779 | no |
+| report_max | 3.5974 ± 0.0231 | over_one | -740.8117 ± 0.8089 | yes (strict) |
+| over_one | 0.0548 ± 0.0002 | honest | -0.9800 ± 0.0000 | yes (strict) |
+
+**both+stake** (p=0.5)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0000 ± 0.0000 | posterior_shade_10 | -0.0000 ± 0.0001 | yes (strict) |
+| hide_one | 0.8612 ± 0.0045 | hide_unrecognized | +0.2803 ± 0.0040 | no |
+| shift_minus_one | 0.7616 ± 0.0041 | hide_unrecognized | +0.0670 ± 0.0029 | no |
+| hide_unrecognized | 0.1665 ± 0.0028 | posterior_shade_50 | +0.0649 ± 0.0027 | no |
+| posterior_shade_50 | 0.0364 ± 0.0007 | posterior_shade_10 | +0.0089 ± 0.0010 | no |
+| posterior_shade_10 | -0.0002 ± 0.0001 | honest | -0.0017 ± 0.0001 | yes (strict) |
+| always_zero | 6.6135 ± 0.0583 | shift_minus_one | +3.5106 ± 0.0781 | no |
+| report_max | 4.0804 ± 0.0343 | over_one | -740.3135 ± 0.8183 | yes (strict) |
+| over_one | 0.0397 ± 0.0007 | honest | -0.9603 ± 0.0007 | yes (strict) |
+
+**both+stake+eps** (p=0.5)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0348 ± 0.0002 | posterior_shade_10 | +0.0005 ± 0.0001 | no |
+| hide_one | 0.8796 ± 0.0045 | hide_unrecognized | +0.2688 ± 0.0041 | no |
+| shift_minus_one | 0.7764 ± 0.0041 | hide_unrecognized | +0.0519 ± 0.0029 | no |
+| hide_unrecognized | 0.1964 ± 0.0029 | posterior_shade_50 | +0.0624 ± 0.0027 | no |
+| posterior_shade_50 | 0.0687 ± 0.0008 | posterior_shade_10 | +0.0069 ± 0.0009 | no |
+| posterior_shade_10 | 0.0341 ± 0.0002 | honest | -0.0022 ± 0.0001 | yes (strict) |
+| always_zero | 6.6135 ± 0.0583 | shift_minus_one | +3.4958 ± 0.0779 | no |
+| report_max | 4.6804 ± 0.0343 | over_one | -739.7684 ± 0.8183 | yes (strict) |
+| over_one | 0.0946 ± 0.0007 | honest | -0.9403 ± 0.0007 | yes (strict) |
+
+max |MC - exact| symmetric cost: 0.022526116964865395
+
+===== experiments.exp2_equilibrium =====
+                      reward  bounded  honest_exploitability  eq_exploitability     psi  lbfgs_dirty  lbfgs_clean  gp_dirty  gp_dirty_ci  gp_clean  gp_dist  sgp_dirty  sgp_dirty_ci  sgp_dist
+0             agreement_only     True                 0.0000                0.0  0.0000      -0.0000      -0.0000    0.0298       0.2103    0.0298   0.1378     0.0302        0.2088    0.1375
+1         agreement_only+eps    False                 0.0001                NaN     NaN          NaN          NaN  150.0298       0.2103       NaN      NaN        NaN           NaN       NaN
+2       agreement_only+stake    False                 0.0008                NaN     NaN          NaN          NaN  300.0568       0.2103       NaN      NaN        NaN           NaN       NaN
+3   agreement_only+stake+eps    False                 0.0013                NaN     NaN          NaN          NaN  450.0568       0.2103       NaN      NaN        NaN           NaN       NaN
+4                 floor_only     True                 0.0000                0.0  0.0000      -0.0000      -0.0000   -0.3976       0.1326   -0.3802   0.5458    -0.3976        0.1326    0.5458
+5             floor_only+eps     True                 0.0001                0.0  0.0697       0.0186       0.0125    0.0186       0.0000    0.0125   0.0000     0.0183        0.0001    0.0095
+6           floor_only+stake     True                 0.0017                0.0 -0.0033       0.0829       0.0250    0.0829       0.0000   -0.1474   0.3152     0.0828        0.0001    0.3153
+7       floor_only+stake+eps     True                 0.0025                0.0  0.0649       0.1012       0.0375    0.1012       0.0000    0.0375   0.0000     0.1011        0.0001    0.0050
+8                       both     True                 0.0000                0.0  0.0000      -0.0000      -0.0000   -0.1463       0.0900   -0.1463   0.1463    -0.1461        0.0886    0.1461
+9                   both+eps     True                 0.0001                0.0  0.0697       0.0149       0.0125    0.0149       0.0000    0.0125   0.0000     0.0149        0.0000    0.0007
+10                both+stake     True                 0.0005                0.0 -0.0019       0.0486       0.0250    0.0486       0.0000    0.0250   0.0000     0.0485        0.0000    0.0008
+11            both+stake+eps     True                 0.0008                0.0  0.0666       0.0634       0.0375    0.0634       0.0000    0.0375   0.0000     0.0634        0.0000    0.0008
+reward             iteration
+agreement + floor  0              0.000000
+                   1000           0.048555
+                   2000           0.048555
+                   4000           0.048555
+                   8000           0.048555
+                   16000          0.048555
+                   32000          0.048555
+agreement only     0              0.000000
+                   1000           6.693667
+                   2000          13.360333
+                   4000          26.693667
+                   8000          53.360333
+                   16000        106.693667
+                   32000        213.360333
+Name: concealment_dirty, dtype: float64
+               reward   shift         psi
+35     agreement only     0.0        0.00
+36     agreement only     1.0       -0.08
+37     agreement only    10.0       -0.80
+38     agreement only   100.0       -8.00
+39     agreement only  1000.0      -80.00
+75  agreement + floor     0.0        0.00
+76  agreement + floor     1.0        1.52
+77  agreement + floor    10.0      189.90
+78  agreement + floor   100.0    19892.70
+79  agreement + floor  1000.0  1998920.70
+   round  concealment_dirty
+0      0          -0.000000
+1      1           0.039514
+2     10           0.227000
+3     50           1.027000
+4    100           2.027000
+5    200           4.027000
+   sweep   beta    lam      b  concealment_dirty  concealment_uncond  under_clean   bound  agreement_part  floor_part  grad  ratio_dirty_to_bound
+0      b   1.00   1.00  0.000            -0.0000             -0.0000      -0.0000  0.0000          0.0000      0.0000   0.0                   NaN
+1      b   1.00   1.00  0.025             0.0061              0.0012       0.0031  0.1264          0.0014      0.1250   0.0                0.0480
+2      b   1.00   1.00  0.050             0.0121              0.0024       0.0062  0.2527          0.0027      0.2500   0.0                0.0480
+3      b   1.00   1.00  0.100             0.0243              0.0049       0.0125  0.5054          0.0054      0.5000   0.0                0.0480
+4      b   1.00   1.00  0.200             0.0486              0.0097       0.0250  1.0109          0.0109      1.0000   0.0                0.0480
+5      b   1.00   1.00  0.400             0.0971              0.0194       0.0500  2.0218          0.0218      2.0000   0.0                0.0480
+6      b   1.00   1.00  0.800             0.1942              0.0388       0.1000  4.0436          0.0436      4.0000   0.0                0.0480
+7   beta   0.25   1.00  0.200             0.0667              0.0133       0.0250  1.0436          0.0436      1.0000   0.0                0.0639
+8   beta   0.50   1.00  0.200             0.0580              0.0116       0.0250  1.0218          0.0218      1.0000   0.0                0.0568
+9   beta   1.00   1.00  0.200             0.0486              0.0097       0.0250  1.0109          0.0109      1.0000   0.0                0.0480
+10  beta   2.00   1.00  0.200             0.0401              0.0080       0.0250  1.0054          0.0054      1.0000   0.0                0.0398
+11  beta   4.00   1.00  0.200             0.0338              0.0068       0.0250  1.0027          0.0027      1.0000   0.0                0.0337
+12  beta  16.00   1.00  0.200             0.0275              0.0055       0.0250  1.0007          0.0007      1.0000   0.0                0.0275
+13  beta  64.00   1.00  0.200             0.0257              0.0051       0.0250  1.0002          0.0002      1.0000   0.0                0.0256
+14   lam   1.00   0.25  0.200             0.1351              0.0270       0.1000  4.0109          0.0109      4.0000   0.0                0.0337
+15   lam   1.00   0.50  0.200             0.0801              0.0160       0.0500  2.0109          0.0109      2.0000   0.0                0.0398
+16   lam   1.00   1.00  0.200             0.0486              0.0097       0.0250  1.0109          0.0109      1.0000   0.0                0.0480
+17   lam   1.00   2.00  0.200             0.0290              0.0058       0.0125  0.5109          0.0109      0.5000   0.0                0.0568
+18   lam   1.00   4.00  0.200             0.0167              0.0033       0.0063  0.2609          0.0109      0.2500   0.0                0.0639
+19   lam   1.00  16.00  0.200             0.0049              0.0010       0.0016  0.0734          0.0109      0.0625   0.0                0.0663
+20   lam   1.00  64.00  0.200             0.0013              0.0003       0.0004  0.0265          0.0109      0.0156   0.0                0.0491
+
+===== experiments.exp3_recognizability =====
+{'p': 0.0, 'sigma2': 0.0225, 'gamma': 0.8375, 'sigma2_over_gamma': 0.0269, 'concealment_dirty': 0.0367, 'concealment_uncond': 0.0073, 'under_clean': 0.025, 'bound': 1.0054, 'lbfgs_grad': 0.0, 'brier_gain_logreg': 0.0208, 'brier_gain_logreg_ci': 0.0005, 'brier_gain_mlp': 0.022, 'brier_gain_mlp_ci': 0.0005, 'gp_concealment_dirty': 0.0367, 'gp_concealment_dirty_ci': 0.0}
+{'p': 0.2, 'sigma2': 0.0271, 'gamma': 0.8042, 'sigma2_over_gamma': 0.0337, 'concealment_dirty': 0.0396, 'concealment_uncond': 0.0079, 'under_clean': 0.025, 'bound': 1.0067, 'lbfgs_grad': 0.0, 'brier_gain_logreg': 0.0247, 'brier_gain_logreg_ci': 0.0008, 'brier_gain_mlp': 0.0259, 'brier_gain_mlp_ci': 0.0012, 'gp_concealment_dirty': 0.0396, 'gp_concealment_dirty_ci': 0.0}
+{'p': 0.4, 'sigma2': 0.034, 'gamma': 0.7535, 'sigma2_over_gamma': 0.0452, 'concealment_dirty': 0.0446, 'concealment_uncond': 0.0089, 'under_clean': 0.025, 'bound': 1.009, 'lbfgs_grad': 0.0, 'brier_gain_logreg': 0.0314, 'brier_gain_logreg_ci': 0.0013, 'brier_gain_mlp': 0.0321, 'brier_gain_mlp_ci': 0.0032, 'gp_concealment_dirty': 0.0446, 'gp_concealment_dirty_ci': 0.0}
+{'p': 0.6, 'sigma2': 0.0457, 'gamma': 0.6671, 'sigma2_over_gamma': 0.0686, 'concealment_dirty': 0.0546, 'concealment_uncond': 0.0109, 'under_clean': 0.025, 'bound': 1.0137, 'lbfgs_grad': 0.0, 'brier_gain_logreg': 0.0428, 'brier_gain_logreg_ci': 0.0012, 'brier_gain_mlp': 0.0435, 'brier_gain_mlp_ci': 0.005, 'gp_concealment_dirty': 0.0546, 'gp_concealment_dirty_ci': 0.0}
+{'p': 0.8, 'sigma2': 0.0698, 'gamma': 0.488, 'sigma2_over_gamma': 0.143, 'concealment_dirty': 0.0858, 'concealment_uncond': 0.0172, 'under_clean': 0.025, 'bound': 1.0286, 'lbfgs_grad': 0.0, 'brier_gain_logreg': 0.0654, 'brier_gain_logreg_ci': 0.0015, 'brier_gain_mlp': 0.067, 'brier_gain_mlp_ci': 0.0027, 'gp_concealment_dirty': 0.0858, 'gp_concealment_dirty_ci': 0.0}
+{'p': 0.95, 'sigma2': 0.1182, 'gamma': 0.1741, 'sigma2_over_gamma': 0.6787, 'concealment_dirty': 0.2868, 'concealment_uncond': 0.0574, 'under_clean': 0.025, 'bound': 1.1357, 'lbfgs_grad': 0.0, 'brier_gain_logreg': 0.1174, 'brier_gain_logreg_ci': 0.0023, 'brier_gain_mlp': 0.1168, 'brier_gain_mlp_ci': 0.0028, 'gp_concealment_dirty': 0.2868, 'gp_concealment_dirty_ci': 0.0}
+{'p': 1.0, 'sigma2': 0.16, 'gamma': 0.0, 'sigma2_over_gamma': inf, 'concealment_dirty': 1.35, 'concealment_uncond': 0.27, 'under_clean': -0.0, 'bound': inf, 'lbfgs_grad': 0.0, 'brier_gain_logreg': 0.1603, 'brier_gain_logreg_ci': 0.0017, 'brier_gain_mlp': 0.1502, 'brier_gain_mlp_ci': 0.0114, 'gp_concealment_dirty': 1.35, 'gp_concealment_dirty_ci': 0.0}
+{'monotone_increasing': True, 'largest_step': 0.4429245418733423, 'largest_step_at_p': 0.99, 'max_slope': 44.29245418733419, 'max_slope_at_p': 0.99, 'gap_between_p_0p99999_and_1': 0.0001319598966156299, 'concealment_at_p0': 0.03667343230128027, 'concealment_at_p1': 1.35}
+
+===== experiments.exp4_integer =====
+threshold (beta=1): 0.6787273019642527 binding k: 1 c_1: 0.888888888888889 q0: 0.22313634901787358
+prediction matches at every grid point: True (156 points)
+        lam  predicted_stable  hide_one_stable  best_unilateral_gain states_that_deviate  br_rounds  limit_is_honest  limit_concealment_dirty  real_grad_norm_at_hide_one  real_eq_from_hide_one_concealment
+52   0.0500              True             True                0.0000                              0            False                      1.0                      0.7585                            -0.1304
+53   0.1000              True             True                0.0000                              0            False                      1.0                      0.7957                            -0.0029
+54   0.1500              True             True                0.0000                              0            False                      1.0                      0.8370                            -0.0026
+55   0.2000              True             True                0.0000                              0            False                      1.0                      0.8818                            -0.0095
+56   0.2500              True             True                0.0000                              0            False                      1.0                      0.9297                            -0.0057
+57   0.3000              True             True                0.0000                              0            False                      1.0                      0.9802                            -0.0041
+58   0.3500              True             True                0.0000                              0            False                      1.0                      1.0329                            -0.0036
+59   0.4000              True             True                0.0000                              0            False                      1.0                      1.0875                            -0.0034
+60   0.4500              True             True                0.0000                              0            False                      1.0                      1.1438                            -0.0033
+61   0.5000              True             True                0.0000                              0            False                      1.0                      1.2014                            -0.0025
+62   0.5500              True             True                0.0000                              0            False                      1.0                      1.2602                            -0.0014
+63   0.6000              True             True                0.0000                              0            False                      1.0                      1.3201                            -0.0006
+64   0.6500              True             True                0.0000                              0            False                      1.0                      1.3809                            -0.0002
+65   0.6777              True             True                0.0000                              0            False                      1.0                      1.4150                            -0.0003
+66   0.6797             False            False                0.0003                   1          2             True                     -0.0                      1.4174                            -0.0003
+67   0.7000             False            False                0.0057                   1          2             True                     -0.0                      1.4425                            -0.0004
+68   0.7500             False            False                0.0191                   1          2             True                     -0.0                      1.5048                            -0.0009
+69   0.8000             False            False                0.0325                   1          2             True                     -0.0                      1.5677                            -0.0009
+70   0.8500             False            False                0.0459                   1          2             True                     -0.0                      1.6311                            -0.0010
+71   0.9000             False            False                0.0674                 1;2          2             True                     -0.0                      1.6950                            -0.0012
+72   0.9500             False            False                0.0909                 1;2          2             True                     -0.0                      1.7594                            -0.0013
+73   1.0000             False            False                0.1143                 1;2          2             True                     -0.0                      1.8241                            -0.0013
+74   1.0500             False            False                0.1377                 1;2          2             True                     -0.0                      1.8892                            -0.0013
+75   1.1000             False            False                0.1616               1;2;3          2             True                     -0.0                      1.9546                            -0.0013
+76   1.1500             False            False                0.1901               1;2;3          2             True                     -0.0                      2.0202                            -0.0014
+77   1.2000             False            False                0.2185               1;2;3          2             True                     -0.0                      2.0861                            -0.0014
+78   1.2500             False            False                0.2470               1;2;3          2             True                     -0.0                      2.1523                            -0.0015
+79   1.3000             False            False                0.2754               1;2;3          2             True                     -0.0                      2.2187                            -0.0015
+80   1.3500             False            False                0.3039               1;2;3          2             True                     -0.0                      2.2852                            -0.0015
+81   1.4000             False            False                0.3328             1;2;3;4          2             True                     -0.0                      2.3519                            -0.0016
+82   1.4500             False            False                0.3631             1;2;3;4          2             True                     -0.0                      2.4188                            -0.0016
+83   1.5000             False            False                0.3935             1;2;3;4          2             True                     -0.0                      2.4858                            -0.0016
+84   1.5500             False            False                0.4238             1;2;3;4          2             True                     -0.0                      2.5530                            -0.0020
+85   1.6000             False            False                0.4541             1;2;3;4          2             True                     -0.0                      2.6203                            -0.0025
+86   1.6500             False            False                0.4845             1;2;3;4          2             True                     -0.0                      2.6877                            -0.0030
+87   1.7000             False            False                0.5148             1;2;3;4          2             True                     -0.0                      2.7552                            -0.0038
+88   1.7500             False            False                0.5453           1;2;3;4;5          2             True                     -0.0                      2.8228                            -0.0047
+89   1.8000             False            False                0.5762           1;2;3;4;5          2             True                     -0.0                      2.8905                            -0.0060
+90   1.8500             False            False                0.6071           1;2;3;4;5          2             True                     -0.0                      2.9583                            -0.0077
+91   1.9000             False            False                0.6380           1;2;3;4;5          2             True                     -0.0                      3.0262                            -0.0091
+92   1.9500             False            False                0.6689           1;2;3;4;5          2             True                     -0.0                      3.0942                            -0.0103
+93   2.0000             False            False                0.6998           1;2;3;4;5          2             True                     -0.0                      3.1622                            -0.0115
+94   2.0500             False            False                0.7307           1;2;3;4;5          2             True                     -0.0                      3.2303                            -0.0124
+95   2.1000             False            False                0.7616           1;2;3;4;5          2             True                     -0.0                      3.2984                            -0.0133
+96   2.1500             False            False                0.7925         1;2;3;4;5;6          2             True                     -0.0                      3.3666                            -0.0140
+97   2.2000             False            False                0.8236         1;2;3;4;5;6          2             True                     -0.0                      3.4349                            -0.0147
+98   2.2500             False            False                0.8546         1;2;3;4;5;6          2             True                     -0.0                      3.5032                            -0.0152
+99   2.3000             False            False                0.8856         1;2;3;4;5;6          2             True                     -0.0                      3.5716                            -0.0157
+100  2.3500             False            False                0.9167         1;2;3;4;5;6          2             True                     -0.0                      3.6400                            -0.0161
+101  2.4000             False            False                0.9477         1;2;3;4;5;6          2             True                     -0.0                      3.7084                            -0.0165
+102  2.4500             False            False                0.9787         1;2;3;4;5;6          2             True                     -0.0                      3.7769                            -0.0168
+103  2.5000             False            False                1.0098         1;2;3;4;5;6          2             True                     -0.0                      3.8455                            -0.0170
+
+===== experiments.exp5_marker =====
+
+**both** (marker=on)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0000 ± 0.0000 | posterior_shade_10 | -0.0032 ± 0.0000 | yes (strict) |
+| hide_one | 0.9024 ± 0.0037 | marker_hide_one | +0.2778 ± 0.0068 | no |
+| shift_minus_one | 0.8031 ± 0.0022 | hide_one | +0.0000 ± 0.0000 | yes (weak) |
+| hide_unrecognized | 0.0240 ± 0.0008 | marker_hide_one | +0.0039 ± 0.0009 | no |
+| posterior_shade_50 | 0.0031 ± 0.0001 | marker_hide_one | -0.0267 ± 0.0004 | yes (strict) |
+| posterior_shade_10 | 0.0001 ± 0.0000 | honest | -0.0030 ± 0.0000 | yes (strict) |
+| always_zero | 6.7419 ± 0.0244 | shift_minus_one | +3.6061 ± 0.0416 | no |
+| report_max | 2.9971 ± 0.0234 | over_one | -741.6066 ± 0.6671 | yes (strict) |
+| over_one | 0.0000 ± 0.0000 | honest | -1.0000 ± 0.0000 | yes (strict) |
+| marker_hide_one | 0.0000 ± 0.0000 | posterior_shade_50 | -0.0296 ± 0.0005 | yes (strict) |
+
+**both+stake** (marker=on)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0000 ± 0.0000 | posterior_shade_10 | +0.0018 ± 0.0000 | no |
+| hide_one | 0.8631 ± 0.0040 | marker_hide_one | +0.2778 ± 0.0068 | no |
+| shift_minus_one | 0.7637 ± 0.0026 | hide_one | +0.0000 ± 0.0000 | yes (weak) |
+| hide_unrecognized | -0.0252 ± 0.0006 | marker_hide_one | -0.0060 ± 0.0008 | yes (strict) |
+| posterior_shade_50 | -0.0215 ± 0.0003 | marker_hide_one | -0.0119 ± 0.0003 | yes (strict) |
+| posterior_shade_10 | -0.0048 ± 0.0001 | honest | -0.0080 ± 0.0001 | yes (strict) |
+| always_zero | 6.6336 ± 0.0234 | shift_minus_one | +3.5371 ± 0.0411 | no |
+| report_max | 4.0704 ± 0.0287 | over_one | -740.5727 ± 0.6703 | yes (strict) |
+| over_one | 0.0394 ± 0.0004 | honest | -0.9606 ± 0.0004 | yes (strict) |
+| marker_hide_one | -0.0394 ± 0.0004 | hide_unrecognized | -0.0221 ± 0.0006 | yes (strict) |
+
+**both** (marker=off)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0000 ± 0.0000 | posterior_shade_10 | -0.0021 ± 0.0000 | yes (strict) |
+| hide_one | 0.9009 ± 0.0039 | hide_unrecognized | +0.2991 ± 0.0039 | no |
+| shift_minus_one | 0.8013 ± 0.0034 | hide_unrecognized | +0.0858 ± 0.0025 | no |
+| hide_unrecognized | 0.1874 ± 0.0026 | posterior_shade_50 | +0.0754 ± 0.0026 | no |
+| posterior_shade_50 | 0.0468 ± 0.0006 | posterior_shade_10 | +0.0173 ± 0.0009 | no |
+| posterior_shade_10 | 0.0019 ± 0.0000 | honest | +0.0004 ± 0.0000 | no |
+| always_zero | 6.7227 ± 0.0583 | shift_minus_one | +3.5800 ± 0.0780 | no |
+| report_max | 2.9974 ± 0.0231 | over_one | -741.3568 ± 0.8088 | yes (strict) |
+| over_one | 0.0000 ± 0.0000 | honest | -1.0000 ± 0.0000 | yes (strict) |
+| marker_hide_one | 0.4517 ± 0.0021 | posterior_shade_50 | +0.0941 ± 0.0030 | no |
+
+**both+stake** (marker=off)
+
+| strategy (both use it) | expected cost | best unilateral deviation | gain from it | equilibrium in menu |
+|---|---|---|---|---|
+| honest | 0.0000 ± 0.0000 | posterior_shade_10 | -0.0000 ± 0.0001 | yes (strict) |
+| hide_one | 0.8612 ± 0.0045 | hide_unrecognized | +0.2803 ± 0.0040 | no |
+| shift_minus_one | 0.7616 ± 0.0041 | hide_unrecognized | +0.0670 ± 0.0029 | no |
+| hide_unrecognized | 0.1665 ± 0.0028 | posterior_shade_50 | +0.0649 ± 0.0027 | no |
+| posterior_shade_50 | 0.0364 ± 0.0007 | posterior_shade_10 | +0.0089 ± 0.0010 | no |
+| posterior_shade_10 | -0.0002 ± 0.0001 | honest | -0.0017 ± 0.0001 | yes (strict) |
+| always_zero | 6.6135 ± 0.0583 | shift_minus_one | +3.5106 ± 0.0781 | no |
+| report_max | 4.0804 ± 0.0343 | over_one | -740.3135 ± 0.8183 | yes (strict) |
+| over_one | 0.0397 ± 0.0007 | honest | -0.9603 ± 0.0007 | yes (strict) |
+| marker_hide_one | 0.4316 ± 0.0024 | posterior_shade_50 | +0.0844 ± 0.0032 | no |
+
+            env      reward profile        deviation  cost_dev_vs_profile   cost_ci      gain   gain_ci
+9     marker=on        both  honest  marker_hide_one             0.196940  0.002188 -0.196940  0.002188
+109   marker=on  both+stake  honest  marker_hide_one             0.157552  0.001751 -0.157552  0.001751
+9    marker=off        both  honest  marker_hide_one             0.722420  0.003040 -0.722420  0.003040
+109  marker=off  both+stake  honest  marker_hide_one             0.702336  0.003102 -0.702336  0.003102
+    marker      b   sigma2    gamma  concealment_dirty  under_clean  mechanism_penalty_paid  gp_concealment_dirty  gp_concealment_dirty_ci
+0     True  0.000  0.16000 -0.00000           -0.00000     -0.00000                 0.00000              -0.15880                  0.11220
+1     True  0.001  0.16000 -0.00000            1.00069     -0.00000                 0.00000               1.00069                  0.00000
+2     True  0.010  0.16000 -0.00000            1.00692     -0.00000                 0.00001               1.00692                  0.00000
+3     True  0.050  0.16000 -0.00000            1.03458     -0.00000                 0.00018               1.03458                  0.00000
+4     True  0.200  0.16000 -0.00000            1.13830     -0.00000                 0.00282               1.13830                  0.00000
+5     True  0.800  0.16000 -0.00000            1.55321     -0.00000                 0.04511               1.55321                  0.00000
+6    False  0.000  0.03903  0.71676           -0.00000     -0.00000                 0.00000              -0.14629                  0.09001
+7    False  0.001  0.03903  0.71676            0.00024      0.00013                 0.00000               0.00024                  0.00000
+8    False  0.010  0.03903  0.71676            0.00243      0.00125                 0.00000               0.00243                  0.00000
+9    False  0.050  0.03903  0.71676            0.01214      0.00625                 0.00008               0.01214                  0.00000
+10   False  0.200  0.03903  0.71676            0.04855      0.02500                 0.00124               0.04855                  0.00000
+11   False  0.800  0.03903  0.71676            0.19422      0.10000                 0.01983               0.19422                  0.00000
