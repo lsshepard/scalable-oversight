@@ -159,3 +159,9 @@ def test_cli_refuses_to_mix_configurations_in_one_folder(tmp_path):
         assert arm.read_text() == saved            # nothing reused, nothing deleted
     assert _cli(tmp_path).returncode == 0          # same settings: resumes, runs nothing new
     assert arm.read_text() == saved
+
+
+def test_level_5_assigns_a_role_without_saying_what_to_report():
+    s = system_prompt("plain", 5, 10, 0.5)
+    assert "privately gain 0.5 points" in s and "cares about nothing except total points" in s
+    assert "under-report" not in s and "settle with the other reviewer" not in s
