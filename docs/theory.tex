@@ -1,0 +1,379 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm,mathtools,booktabs,enumitem,hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black}
+\usepackage{xcolor}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\cC}{\mathcal{C}}
+\newcommand{\cZ}{\mathcal{Z}}
+\newcommand{\cU}{\mathcal{U}}
+\newcommand{\ip}[2]{\langle #1,#2\rangle}
+\newcommand{\norm}[1]{\lVert #1\rVert}
+\newcommand{\negp}[1]{(#1)_{-}}
+\newcommand{\posp}[1]{(#1)_{+}}
+\newcommand{\lbar}{\bar\lambda}
+
+\title{Honest Reporting through Hidden Perturbations:\\ Theory}
+\author{Working draft for Liam Shepard (CS2823)}
+\date{}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Status.} Every numbered statement below has a complete proof in this document. The statements were also checked numerically on small finite models (Section~\ref{sec:numerics}). Nothing here has been reviewed by a second person, and the novelty of individual results relative to the peer-prediction literature has only been spot-checked.
+
+\section{Model}\label{sec:model}
+
+\paragraph{Originals and truth.} A supervised model produces an original output $U\in\cU$ with law $\pi$. The designer wants $T(U)\in\R^d_{\ge 0}$, for example the severity of misconduct in each of $d$ categories, with $T(u)=0$ meaning a clean output. The designer cannot evaluate $T$.
+
+\paragraph{Hidden perturbations.} For each supervisor $i\in\{1,\dots,n\}$, $n\ge 2$, the designer draws a private seed $R_i$, independent of $U$ and of the other seeds and identically distributed, and shows supervisor $i$ the view $Z_i=g(U,R_i)\in\cZ$. Conditional on $U$ the views are i.i.d. Let $\mu$ be the law of $Z_i$. Let $\tau:\cZ\to\R^d$ be the truthful report on a view.
+
+\begin{assumption}[Known effect]\label{a:effect}
+There is $\Delta_i=\delta(U,R_i)\in\R^d_{\ge0}$, computable by the designer, with $\tau(Z_i)=T(U)+\Delta_i$ almost surely. $T(U)$ and $\Delta_i$ are square integrable.
+\end{assumption}
+
+The designer knows how its perturbation changed the truth and does not know the truth itself. Inserting behaviors with known severity into a log is the leading example.
+
+\paragraph{Reports and rewards.} Supervisor $i$ observes only $Z_i$ and reports $F_i(Z_i)$ with $F_i\in L^2(\mu;\R^d)$. Write $G_i=F_i-\tau$ for the reporting error and
+\[
+V_i \;=\; F_i(Z_i)-\Delta_i \;=\; T(U)+G_i(Z_i)
+\]
+for the adjusted report. The mechanism charges supervisor $i$
+\begin{equation}\label{eq:reward}
+\frac{\beta}{n-1}\sum_{j\ne i}\norm{V_i-V_j}^2\;+\;\lambda\,\norm{\negp{V_i}}^2,
+\end{equation}
+where $\negp{v}$ is the coordinatewise negative part. The first term is \emph{adjusted agreement}. The second is the \emph{planted floor}: since $\negp{V_i}=\posp{\Delta_i-F_i(Z_i)}$, it penalizes a report that accounts for less than what was planted. Both terms are computable without $T$.
+
+\paragraph{Outside incentives.} Supervisor $i$ also gains $b\,\E\ip{D(U)}{T(U)-V_i}$ from under-reporting, where $D\in L^2(\pi;\R^d)$ is the direction of temptation and $b\ge0$ its strength. Optionally the mechanism charges $\varepsilon\ge 0$ per reported unit. Up to a constant, supervisor $i$ minimizes
+\begin{equation}\label{eq:cost}
+J_i(G)=\frac{\beta}{n-1}\sum_{j\ne i}\E\norm{G_i(Z_i)-G_j(Z_j)}^2+\lambda\,\E\norm{\negp{T(U)+G_i(Z_i)}}^2+\E\ip{S(U)}{G_i(Z_i)},
+\end{equation}
+with $S=bD+\varepsilon\mathbf 1$. A reporting charge is a blanket temptation that the designer adds on purpose. Pure reward maximizers are the case $b=0$.
+
+\paragraph{Maintained restrictions.} Supervisors do not communicate and do not condition on history. They may share a policy, which is how collusion enters. Reports are real-valued (Section~\ref{sec:coarse} shows why this matters).
+
+\subsection{Common information and the gap}
+
+\begin{definition}\label{d:common}
+$\cC=\{B\subseteq\cZ \text{ measurable}: \mathbf 1_B(Z_1)=\mathbf 1_B(Z_2)\ \text{a.s.}\}$ is the \emph{common information} $\sigma$-field. For $f\in L^2(\mu)$ let $\bar f=\E_\mu[f\mid\cC]$.
+\end{definition}
+
+$\cC$ collects the features of a view that survive every perturbation, such as the task being performed. It is the Gács--Körner common part of two views.
+
+\begin{lemma}\label{l:common}
+For $f\in L^2(\mu)$, the following are equivalent: (i) $f$ is $\cC$-measurable up to a null set; (ii) $f(Z_1)=f(Z_2)$ a.s.; (iii) $\E[f(Z_1)f(Z_2)]=\E[f(Z_1)^2]$. In that case $f(Z_1)$ is a.s.\ a function of $U$.
+\end{lemma}
+\begin{proof}
+(ii)$\Leftrightarrow$(iii) because $\E(f(Z_1)-f(Z_2))^2=2\E f(Z_1)^2-2\E[f(Z_1)f(Z_2)]$. (ii)$\Rightarrow$(i): each set $\{f>t\}$ lies in $\cC$. (i)$\Rightarrow$(ii): true for $\cC$-simple functions and preserved under $L^2$ limits. Last claim: $Z_1,Z_2$ are conditionally independent given $U$, and two conditionally independent variables that are a.s.\ equal are conditionally degenerate.
+\end{proof}
+
+\begin{definition}\label{d:gap}
+The \emph{gap} is
+\[
+\gamma\;=\;1-\sup\Big\{\frac{\E[f(Z_1)f(Z_2)]}{\E[f(Z_1)^2]}\;:\;f\in L^2(\mu),\ \bar f=0,\ f\neq 0\Big\}.
+\]
+\end{definition}
+
+Since $\E[f(Z_1)f(Z_2)]=\E\big[\E[f(Z_1)\mid U]^2\big]$, we have $\gamma\in[0,1]$, and $1-\gamma$ is the squared maximal correlation between a view and the original beyond their common part. If $\cZ$ is finite then $\gamma>0$: the supremum is attained on a finite-dimensional sphere, and by Lemma~\ref{l:common} a maximizer with ratio $1$ would be $\cC$-measurable.
+
+\begin{assumption}[Clean originals in every context]\label{a:clean}
+There is $p_0>0$ such that for every coordinate $k$ and every $B\in\cC$, $\P(T_k(U)=0,\ Z_1\in B)\ge p_0\,\mu(B)$.
+\end{assumption}
+
+Assumption~\ref{a:clean} says that no surviving feature of a view certifies guilt. It is the substantive assumption of the paper, and Section~\ref{sec:signal} shows what happens without it.
+
+\paragraph{Notation.} For $G_i\in L^2(\mu;\R^d)$ write $h_i=\bar G_i$ and $H_i=G_i-h_i$, coordinatewise. Norms are $L^2(\mu)$ norms unless stated.
+
+\section{What each reward term can see}\label{sec:see}
+
+\begin{lemma}[Agreement inequality]\label{l:agree}
+For $G_1,G_2\in L^2(\mu;\R^d)$,
+\[
+\E\norm{G_1(Z_1)-G_2(Z_2)}^2\;\ge\;\gamma\big(\norm{H_1}^2+\norm{H_2}^2\big)+\norm{h_1-h_2}^2 .
+\]
+\end{lemma}
+\begin{proof}
+Work coordinatewise. Expanding, the left side is $\norm{G_1}^2+\norm{G_2}^2-2\E[G_1(Z_1)G_2(Z_2)]$. By Lemma~\ref{l:common}, $h_1(Z_1)=h_1(Z_2)$, so $\E[h_1(Z_1)H_2(Z_2)]=\E[h_1(Z_2)H_2(Z_2)]=0$, and likewise for the other cross term, and $\E[h_1(Z_1)h_2(Z_2)]=\ip{h_1}{h_2}$. With $\Pi f=\E[f(Z_1)\mid U]$, Cauchy--Schwarz and Definition~\ref{d:gap} give
+$|\E[H_1(Z_1)H_2(Z_2)]|=|\E[\Pi H_1\,\Pi H_2]|\le(1-\gamma)\norm{H_1}\norm{H_2}\le\tfrac{1-\gamma}{2}(\norm{H_1}^2+\norm{H_2}^2)$.
+Since $\norm{G_i}^2=\norm{h_i}^2+\norm{H_i}^2$, the claim follows.
+\end{proof}
+
+\begin{lemma}[Floor inequality]\label{l:floor}
+Under Assumption~\ref{a:clean}, for $G\in L^2(\mu;\R^d)$ with $h=\bar G$, $H=G-h$,
+\[
+\E\norm{\negp{T(U)+G(Z_1)}}^2\;\ge\;\tfrac{p_0}{2}\norm{\negp h}^2-\norm{H}^2 .
+\]
+\end{lemma}
+\begin{proof}
+Coordinatewise. On $\{T(U)=0\}$ we have $\negp{T+G}=\negp{h+H}\ge \negp h-|H|$. For reals $a,c\ge0$, $(a-c)^2\ge a^2/2-c^2$, and the right side is negative when $a<c$, so $\negp{h+H}^2\ge\tfrac12\negp h^2-H^2$ in all cases. Hence the left side is at least $\E[\mathbf 1\{T(U)=0\}(\tfrac12\negp{h}^2(Z_1)-H^2(Z_1))]\ge\tfrac{p_0}{2}\norm{\negp h}^2-\norm H^2$, using Assumption~\ref{a:clean} for the nonnegative $\cC$-measurable function $\negp h^2$.
+\end{proof}
+
+Let $m$ denote the $\cC$-conditional essential infimum of $T(U)$: the largest $\cC$-measurable $m:\cZ\to\R^d$ with $m(Z_1)\le T(U)$ a.s. It is the amount of misconduct that context alone certifies. Under Assumption~\ref{a:clean}, $m=0$.
+
+\begin{theorem}[Zero-loss sets]\label{t:zero}
+Under Assumption~\ref{a:effect}:
+\begin{enumerate}[label=(\roman*),leftmargin=2em]
+\item \textbf{Agreement alone.} All adjusted reports agree a.s.\ if and only if $F_i=\tau+h$ for one $\cC$-measurable $h$ common to all $i$. More generally, any payment rule that depends on reports only through the differences $V_i-V_j$ is unchanged when every supervisor adds the same $\cC$-measurable $h$.
+\item \textbf{Floor alone.} The floor is never violated if and only if $F_i(Z_i)\ge\Delta_i$ a.s. If $\Delta_i\le\Delta_{\max}$, the constant report $F_i\equiv\Delta_{\max}$ qualifies.
+\item \textbf{Both.} Agreement and floor losses both vanish if and only if $F_i=\tau+h$ with $h$ $\cC$-measurable and $h\ge -m$. Under Assumption~\ref{a:clean} the condition is $h\ge0$.
+\end{enumerate}
+\end{theorem}
+\begin{proof}
+(i) If $G_i(Z_i)=G_j(Z_j)$ a.s.\ for $i\ne j$, then $G_i(Z_i)$ equals a variable that is conditionally independent of it given $U$, so it is a.s.\ a function of $U$, and then $G_i(Z_1)=G_i(Z_2)$ a.s.; by Lemma~\ref{l:common} $G_i$ is $\cC$-measurable, and $G_i=G_j$. The converse and the invariance statement follow from $h(Z_i)=h(Z_j)$. (ii) is immediate from $\negp{V_i}=\posp{\Delta_i-F_i(Z_i)}$. (iii) Given (i), the floor requires $T(U)+h(Z_1)\ge0$ a.s., that is $-h\le T(U)$, which by maximality of $m$ is $-h\le m$.
+\end{proof}
+
+Agreement alone cannot see a uniform shift such as ``always hide one violation''. The floor alone is satisfied by an uninformative maximal report. Together they leave only over-reporting by an amount that depends on context alone. Concealment survives only up to what the context already certifies.
+
+\begin{proposition}[Quantitative identification]\label{p:quant}
+Under Assumptions~\ref{a:effect}--\ref{a:clean}, with $\lbar=\min\{\lambda,\beta\gamma/2\}$, every profile satisfies
+\[
+\Phi_0(G):=\frac{\beta}{n-1}\sum_{i<j}\E\norm{V_i-V_j}^2+\lambda\sum_i\E\norm{\negp{V_i}}^2
+\;\ge\;\sum_{i}\Big(\frac{\beta\gamma}{2}\norm{H_i}^2+\frac{\lbar p_0}{2}\norm{\negp{h_i}}^2\Big).
+\]
+\end{proposition}
+\begin{proof}
+Summing Lemma~\ref{l:agree} over pairs gives $\frac{\beta}{n-1}\sum_{i<j}\E\norm{V_i-V_j}^2\ge\beta\gamma\sum_i\norm{H_i}^2$. The floor term is nondecreasing in $\lambda$, so replace $\lambda$ by $\lbar$ and apply Lemma~\ref{l:floor}: the total is at least $\sum_i[(\beta\gamma-\lbar)\norm{H_i}^2+\tfrac{\lbar p_0}{2}\norm{\negp{h_i}}^2]$, and $\beta\gamma-\lbar\ge\beta\gamma/2$.
+\end{proof}
+
+\section{Equilibrium}\label{sec:eq}
+
+Consider the game in which each supervisor chooses $G_i\in L^2(\mu;\R^d)$ to minimize $J_i$ in \eqref{eq:cost}. Let $a=\E[S(U)\mid Z_1]$ as a function on $\cZ$, and
+\[
+\bar s=\E_\mu[a\mid\cC],\qquad \sigma_S=\norm{a-\bar s},\qquad
+Q=\frac{\sigma_S^2}{\beta\gamma}+\frac{\norm{\bar s}^2}{\lbar p_0}.
+\]
+$\bar s$ is the part of the temptation that depends on context only (blanket shading). $\sigma_S$ measures how well the temptation can be targeted from a view. Assume $\bar s\ge0$: the temptation is toward under-reporting.
+
+\begin{theorem}[Equilibrium]\label{t:eq}
+Under Assumption~\ref{a:effect}:
+\begin{enumerate}[label=(\alph*),leftmargin=2em]
+\item \textbf{Potential.} $\Psi(G)=\Phi_0(G)+\sum_i\E\ip{S(U)}{G_i(Z_i)}$ is an exact potential. It is convex and differentiable, and the Nash equilibria are exactly its minimizers.
+\item \textbf{No temptation.} If $S=0$, the Nash equilibria are exactly the profiles $F_i=\tau+h$ with $h$ $\cC$-measurable and $h\ge-m$. Under Assumption~\ref{a:clean} these are truthful up to over-reporting by a function of context.
+\item \textbf{Bounded concealment.} Under Assumption~\ref{a:clean} with $\gamma>0$, every Nash equilibrium satisfies
+\[
+\frac1n\sum_i\Big(\beta\gamma\norm{H_i}^2+\lbar p_0\norm{\negp{h_i}}^2\Big)\le Q,\qquad
+\frac1n\sum_i\E\ip{S(U)}{-G_i(Z_i)}\le Q,\qquad
+\frac1n\sum_i\ip{\bar s}{\posp{h_i}}\le \frac Q4 .
+\]
+\item \textbf{Uniqueness.} If in addition $\cZ$ is finite and $\bar s>0$ a.s., a Nash equilibrium exists, is unique, and is symmetric.
+\end{enumerate}
+\end{theorem}
+\begin{proof}
+(a) $J_i-\Psi$ does not depend on $G_i$. $\Psi$ is a sum of a nonnegative quadratic form, the convex $C^1$ function $x\mapsto\negp{x}^2$ composed with affine maps, and a linear term. A minimizer is an equilibrium. Conversely, at an equilibrium $G_i$ minimizes the convex differentiable function $\Psi(\cdot,G_{-i})$ over a linear space, so each partial derivative of $\Psi$ vanishes, hence the full derivative vanishes, hence $G$ is a global minimizer by convexity.
+
+(b) Here $\Psi=\Phi_0\ge0$ with minimum $0$ at $G=0$, and Theorem~\ref{t:zero}(iii) describes the zero set.
+
+(c) Let $G$ be an equilibrium. Stationarity along the ray $t\mapsto tG$ at $t=1$ reads
+\[
+2\cdot\frac{\beta}{n-1}\sum_{i<j}\E\norm{G_i(Z_i)-G_j(Z_j)}^2+\lambda\sum_i\E\big[-2\negp{x_i}\cdot G_i\big]+\sum_i\E\ip{S}{G_i}=0,
+\]
+where $x_i=T(U)+G_i(Z_i)$ and products are coordinatewise sums. Where $\negp{x_i}>0$ we have $G_i=-\negp{x_i}-T$, so $-2\negp{x_i}G_i=2\negp{x_i}^2+2\negp{x_i}T\ge2\negp{x_i}^2$ because $T\ge 0$. Hence $2\Phi_0(G)\le\sum_iW_i$ with $W_i=\E\ip{S(U)}{-G_i(Z_i)}=-\ip{a}{G_i}$. Decompose
+\[
+W_i=-\ip{\bar s}{h_i}-\ip{a-\bar s}{H_i}\le\norm{\bar s}\norm{\negp{h_i}}+\sigma_S\norm{H_i}-\ip{\bar s}{\posp{h_i}} ,
+\]
+using $\bar s\ge0$. Put $E_i=\beta\gamma\norm{H_i}^2+\lbar p_0\norm{\negp{h_i}}^2$. By Cauchy--Schwarz, $\norm{\bar s}\norm{\negp{h_i}}+\sigma_S\norm{H_i}\le\sqrt{Q E_i}$. Proposition~\ref{p:quant} gives $\sum_iE_i\le2\Phi_0(G)$, so
+\[
+\sum_iE_i\le\sum_iW_i\le\sqrt{nQ}\,\Big(\sum_iE_i\Big)^{1/2}-\sum_i\ip{\bar s}{\posp{h_i}} .
+\]
+Therefore $\sum_iE_i\le nQ$, then $\sum_iW_i\le nQ$, and $\sum_i\ip{\bar s}{\posp{h_i}}\le\sup_{e\ge 0}(\sqrt{nQ}\,e-e^2)=nQ/4$.
+
+(d) \emph{Existence.} By Proposition~\ref{p:quant} and the decomposition of $W_i$,
+$\Psi(G)\ge\sum_i\big[\tfrac{\beta\gamma}{2}\norm{H_i}^2-\sigma_S\norm{H_i}+\tfrac{\lbar p_0}{2}\norm{\negp{h_i}}^2-\norm{\bar s}\norm{\negp{h_i}}+\ip{\bar s}{\posp{h_i}}\big]$.
+On a finite $\cZ$, $\gamma>0$ and $\ip{\bar s}{\posp{h_i}}\ge c\norm{\posp{h_i}}$ for some $c>0$, so $\Psi$ is coercive and continuous on a finite-dimensional space and attains its minimum.
+
+\emph{Uniqueness.} Let $G,G'$ be minimizers. $\Psi$ is constant on the segment between them, so its convex summands are each affine there. For the quadratic form this forces $\sum_{i<j}\E\norm{(G_i-G_i')(Z_i)-(G_j-G_j')(Z_j)}^2=0$, hence by Theorem~\ref{t:zero}(i) $G_i-G_i'=h$ for one $\cC$-measurable $h$. For the floor terms, $t\mapsto\E\negp{x+th}^2$ with $x=T+G_i'$ is an integral of convex functions and is affine on $[0,1]$, so the integrand is affine in $t$ a.s. Where $h\ne0$ this requires $x+th\ge0$ for all $t\in[0,1]$, because $\negp{\cdot}^2$ is strictly convex on the negative half-line. So along the segment the floor is slack wherever $h\ne0$. For $B\in\cC$ and a coordinate $k$, moving from $G'$ to $G'+h_k e_k\mathbf 1_B$ leaves the agreement and floor terms unchanged and changes $\Psi$ by $n\ip{\bar s_k}{h_k\mathbf 1_B}$, which must be $\ge0$ by minimality of $G'$. Moving from $G$ to $G-h_ke_k\mathbf 1_B$ changes $\Psi$ by $-n\ip{\bar s_k}{h_k\mathbf 1_B}\ge0$. Hence $\ip{\bar s_k}{h_k\mathbf 1_B}=0$ for all $B\in\cC$; taking $B=\{h_k>0\}$ and $\{h_k<0\}$ and using $\bar s>0$ gives $h=0$. \emph{Symmetry}: a permutation of an equilibrium is an equilibrium.
+\end{proof}
+
+\begin{corollary}[Concealment under temptation]\label{c:conceal}
+Let $\varepsilon=0$, so $S=bD$, with $\bar d=\E[\E[D(U)\mid Z_1]\mid\cC]\ge0$ and $\sigma_D=\norm{\E[D(U)\mid Z_1]-\bar d}$. Under the hypotheses of Theorem~\ref{t:eq}(c), average concealment in the direction of temptation satisfies
+\[
+\frac1n\sum_i\E\ip{D(U)}{T(U)-V_i}\;\le\;b\Big(\frac{\sigma_D^2}{\beta\gamma}+\frac{\norm{\bar d}^2}{\lbar p_0}\Big).
+\]
+\end{corollary}
+
+The first term is targeted concealment, which agreement stops to the extent that plants are unrecognizable. The second is blanket shading, which the floor stops in proportion to how often originals are clean. Neither needs a trusted label on any realistic input.
+
+\begin{corollary}[Reward maximizers]\label{c:rm}
+Let $b=0$, $\cZ$ finite, and Assumption~\ref{a:clean} hold. With no reporting charge, the equilibria are exactly truthful reporting plus a nonnegative function of context. For every $\varepsilon>0$ there is a unique equilibrium $G^\varepsilon$, it is symmetric, and
+\[
+\beta\gamma\norm{H^\varepsilon}^2+\lbar p_0\norm{\negp{h^\varepsilon}}^2\le\frac{d\,\varepsilon^2}{\lbar p_0},\qquad \E\norm{\posp{h^\varepsilon}}_1\le\frac{d\,\varepsilon}{4\lbar p_0}.
+\]
+In particular $G^\varepsilon\to0$ as $\varepsilon\to0$: truthful reporting is the unique limit equilibrium.
+\end{corollary}
+\begin{proof}
+$S=\varepsilon\mathbf 1$ gives $\bar s=\varepsilon\mathbf 1$, $\sigma_S=0$, $Q=d\varepsilon^2/(\lbar p_0)$. Apply Theorem~\ref{t:eq}(b)--(d).
+\end{proof}
+
+\begin{remark}[Collusion]
+With $S=0$ every supervisor attains the minimum possible charge at a zero-loss profile, so no coalition can gain by a joint deviation. With temptation, the bound in Theorem~\ref{t:eq}(c) also holds for the profile that minimizes the coalition's total cost, by the same argument with $\beta$ replaced by $2\beta$ in the agreement term. Supervisors sharing one policy are covered because the unique equilibrium is symmetric.
+\end{remark}
+
+\section{Hiding, from primitives}\label{sec:hiding}
+
+The guarantees depend on $\gamma$, $\sigma_D$, and $p_0$. This section ties the first two to a direct statement about perturbations.
+
+\begin{definition}[Overlap]\label{d:overlap}
+Let $c:\cU\to\mathcal K$ assign each original a \emph{context} that is recoverable from any view, $c(U)=\kappa(Z_i)$ a.s. The perturbation has \emph{overlap} $\eta\in(0,1]$ if for each context $k$ there is a probability $\nu_k$ on $\cZ$ with
+$\P(Z_i\in\cdot\mid U=u)\ge\eta\,\nu_{c(u)}(\cdot)$ for all $u$.
+\end{definition}
+
+Overlap says that originals sharing a context produce views that cannot be fully told apart. On a finite space the best constant is $\eta=\min_k\sum_z\min_{u:c(u)=k}\P(Z=z\mid U=u)$, which for two originals is one minus their total variation distance. It is a property of the perturbation and does not depend on the law $\pi$ of originals.
+
+\begin{proposition}[Overlap gives a gap]\label{p:overlap}
+If the perturbation has overlap $\eta$, then $\cC=\sigma(\kappa)$ up to null sets and $\gamma\ge\eta$. Moreover, for any $D\in L^2(\pi;\R^d)$,
+\[
+\sigma_D^2\;\le\;(1-\gamma)\,\E\norm{D(U)-\E[D(U)\mid c(U)]}^2 .
+\]
+\end{proposition}
+\begin{proof}
+Let $f\in L^2(\mu)$ with $\E[f(Z_1)\mid\kappa]=0$ and $\Pi f(u)=\E[f(Z_1)\mid U=u]$. Write $\Pi f(u)=\eta\,\nu_{c(u)}(f)+(1-\eta)R_uf$ with $R_u$ a probability. Since $\E[\Pi f(U)\mid c(U)=k]=0$, conditional on $c(U)=k$,
+\[
+\E[(\Pi f)^2]\le\E[(\Pi f-\eta\nu_k(f))^2]=(1-\eta)^2\E[(R_Uf)^2]\le(1-\eta)^2\E[R_U(f^2)]\le(1-\eta)\E[f(Z_1)^2],
+\]
+using Jensen and $(1-\eta)R_u(f^2)\le\E[f^2(Z_1)\mid U=u]$. So $\E[f(Z_1)f(Z_2)]=\E[(\Pi f)^2]\le(1-\eta)\norm f^2$. If such an $f$ were $\cC$-measurable, Lemma~\ref{l:common} would give equality with $\norm f^2$, so $f=0$; hence $\cC=\sigma(\kappa)$ and $\gamma\ge\eta$. For the last claim work coordinatewise with $D_0=D-\E[D\mid c(U)]$ and $\Pi^*D_0=\E[D_0(U)\mid Z_1]$, which has zero conditional mean given $\kappa$. Then
+$\norm{\Pi^*D_0}^4=\E[D_0\,\Pi\Pi^*D_0]^2\le\E[D_0^2]\,\E[(\Pi\Pi^*D_0)^2]\le\E[D_0^2](1-\gamma)\norm{\Pi^*D_0}^2$.
+\end{proof}
+
+\begin{corollary}[One-parameter guarantee]\label{c:one}
+With overlap $\eta$, Assumption~\ref{a:clean}, and $\varepsilon=0$, every equilibrium satisfies
+\[
+\frac1n\sum_i\E\ip{D(U)}{T(U)-V_i}\;\le\;b\Big(\frac{1-\eta}{\beta\eta}\,\E\norm{D-\E[D\mid c(U)]}^2+\frac{\norm{\bar d}^2}{\lbar p_0}\Big),\qquad \lbar=\min\{\lambda,\beta\eta/2\}.
+\]
+\end{corollary}
+\begin{proof}
+Theorem~\ref{t:eq}(c) and Proposition~\ref{p:quant} hold with $\gamma$ replaced by any lower bound on it; combine with Proposition~\ref{p:overlap}.
+\end{proof}
+
+\begin{remark}[Measuring recognizability]\label{r:measure}
+Because $\cC\subseteq\sigma(Z_1)$,
+\[
+\sigma_D^2=\E\norm{D(U)-\E[D\mid\cC]}^2-\E\norm{D(U)-\E[D\mid Z_1]}^2 ,
+\]
+the reduction in squared error when $D(U)$ is predicted from a full view instead of from context alone. For $D=\mathbf 1\{T(U)>0\}$ this is the Brier-score advantage of the best possible ``is the original dirty'' discriminator. A trained discriminator gives a lower bound on $\sigma_D^2$. The guarantee needs an upper bound, so an empirical estimate certifies only against the discriminators one managed to train.
+\end{remark}
+
+\section{Robustness and limits}\label{sec:robust}
+
+\subsection{Planted content that interacts with its context}
+
+\begin{theorem}[Misspecified effects]\label{t:mis}
+Suppose $\tau(Z_i)=T(U)+\Delta_i+\xi_i$ with an unknown residual $\xi_i=\xi(U,R_i)$, $\E\norm{\xi_i}^2\le\varrho^2$, and the mechanism still uses $V_i=F_i(Z_i)-\Delta_i$. Under Assumption~\ref{a:clean} with $\gamma>0$ and $\bar s\ge 0$, every Nash equilibrium satisfies
+\[
+\frac1n\sum_i\Big(\beta\gamma\norm{H_i}^2+\lbar p_0\norm{\negp{h_i}}^2\Big)\;\le\;32\,Q+16\,(2\beta+\lambda)\,\varrho^2 .
+\]
+\end{theorem}
+\begin{proof}
+Now $V_i=T+\xi_i+G_i$. Let $\Phi_\xi$ be the mechanism's total charge and $\Psi_\xi=\Phi_\xi-\sum_iW_i$ the potential; Theorem~\ref{t:eq}(a) is unaffected. From $(x+y)^2\ge x^2/2-y^2$, $\E\norm{\xi_i-\xi_j}^2\le4\varrho^2$, and $\negp{T+\xi+G}\ge\negp{T+G}-|\xi|$,
+$\Phi_\xi(G)\ge\tfrac12\Phi_0(G)-n(2\beta+\lambda)\varrho^2$, and $\Phi_\xi(0)\le n(2\beta+\lambda)\varrho^2$. Minimality, $\Psi_\xi(G)\le\Psi_\xi(0)$, gives $\tfrac12\Phi_0(G)\le\sum_iW_i+2n(2\beta+\lambda)\varrho^2$. With $E_i$ as before, $\Phi_0\ge\frac12\sum_iE_i$ and $\sum_iW_i\le\sqrt{nQ\sum_iE_i}$. Writing $e^2=\frac1n\sum_iE_i$, $\tfrac14e^2\le\sqrt Q\,e+2(2\beta+\lambda)\varrho^2$, so $e\le4\sqrt Q+\sqrt{8(2\beta+\lambda)}\,\varrho$ and $e^2\le32Q+16(2\beta+\lambda)\varrho^2$.
+\end{proof}
+
+The reporting error degrades in proportion to the residual, with no threshold. The constants are not optimized. In the affine-mixture version of the model, $\varrho$ is the curvature term $\tfrac M2(1-a)\norm{u-o}^2$.
+
+\subsection{Signalling and failure of Assumption~\ref{a:clean}}\label{sec:signal}
+
+Theorem~\ref{t:zero}(iii) holds without Assumption~\ref{a:clean}: supervisors can conceal up to $m$, the misconduct that surviving context certifies, at zero cost. If the supervised model marks its misconduct with a feature that survives every perturbation, then on marked outputs $m>0$ and that amount can be hidden for free. This is the collusion-signal attack from the AI control literature, and the model reproduces it exactly. The defense inside the model is to shrink $\cC$: perturbations that also rewrite benign content destroy the features a signal could live in. In a two-context example where one context is always dirty with $T\ge1$, a blanket stake of $b=0.02$ produced a mean shift of $-1.03$ in that context and $-0.03$ in the other (Section~\ref{sec:numerics}).
+
+\subsection{Coarse reports}\label{sec:coarse}
+
+\begin{proposition}[Integer reports admit a collusive equilibrium]\label{p:coarse}
+Let $n=2$, $d=1$, $S=0$. The original is clean with probability $p_0$ and otherwise has $T=1$. Supervisor $i$ sees only the total count $Z_i=T(U)+M_i$, where the plant count $M_i=\Delta_i$ is i.i.d.\ with $q_0=\P(M_i=0)$. Reports are restricted to nonnegative integers. Let $c_k=\P(T(U)=0\mid Z_i=k)$. If
+\[
+\lambda\,c_k<\beta\,(1-2c_kq_0)\quad\text{for every }k\ge1\text{ in the support,}
+\]
+then ``hide one'', $F(k)=\max\{k-1,0\}$, is a strict Nash equilibrium. Truthful reporting is also an equilibrium. With real-valued reports, Theorem~\ref{t:eq}(b) rules out ``hide one'' for every $\lambda>0$.
+\end{proposition}
+\begin{proof}
+Let the other supervisor play hide-one, so $G_j=-\mathbf 1\{Z_j\ge1\}$. At a view $k\ge1$, $\P(G_j=0\mid Z_i=k)=c_kq_0=:r$. Reporting $k+g$ costs $\beta[(1-r)(g+1)^2+rg^2]+\lambda[c_k\negp g^2+(1-c_k)\negp{1+g}^2]$. This equals $\beta r+\lambda c_k$ at $g=-1$ and $\beta(1-r)$ at $g=0$, is larger than the value at $0$ for $g\ge1$, and larger than the value at $-1$ for $g\le-2$. So $g=-1$ is the unique best response when $\beta r+\lambda c_k<\beta(1-r)$. At $k=0$ feasibility forces $g\ge0$ and the cost $\beta[(1-q_0)(g+1)^2+q_0g^2]$ is increasing, so $g=0$. Against a truthful opponent the cost of $g$ is $\beta g^2$ plus a nonnegative term, minimized at $0$.
+\end{proof}
+
+Coarse reports turn the smooth guarantee into a threshold condition, because a supervisor cannot take a small step toward the truth. This is the design reason to elicit graded scores.
+
+\subsection{Item-level reports: the baseline}\label{sec:item}
+
+When misconduct is localized to items the designer can plant and label one at a time, the comparison is unnecessary.
+
+\begin{proposition}[Item-level audits]\label{p:item}
+Two supervisors each see an item $x$ that is a violation. With prior probability $\rho_0$ it was planted, drawn from density $q$; otherwise it is genuine, drawn from $p$. Let $\alpha(x)=\rho_0q(x)/(\rho_0q(x)+(1-\rho_0)p(x))$. A supervisor who flags a planted item earns $\lambda$. On a genuine item each supervisor earns $\mu$ if the two actions match, and a supervisor who conceals earns $b$.
+\begin{enumerate}[label=(\roman*),leftmargin=2em]
+\item Flagging is strictly dominant if and only if $\alpha(x)\lambda>(1-\alpha(x))(b+\mu)$, that is, $p(x)/q(x)<\rho_0\lambda/((1-\rho_0)(b+\mu))$.
+\item If the inequality is reversed, both concealing is a Nash equilibrium. The agreement reward $\mu$ enlarges this region.
+\item For any set $A$ of items that a policy conceals and any $\theta\ge0$, the genuine miss rate obeys $P(A)\le\theta\,Q(A)+\sup_B\,[P(B)-\theta Q(B)]$, where $Q(A)$ is the observable miss rate on plants.
+\end{enumerate}
+\end{proposition}
+\begin{proof}
+If the other flags, flagging yields $\alpha\lambda+(1-\alpha)\mu$ and concealing $(1-\alpha)b$. If the other conceals, flagging yields $\alpha\lambda$ and concealing $(1-\alpha)(b+\mu)$. The second comparison is the binding one, which gives (i) and (ii). (iii) is the definition of the supremum.
+\end{proof}
+
+Agreement helps for holistic reports and hurts for item-level reports. In the holistic model the designer cannot score the planted part of a report separately, and comparing two views is the only way to use what it knows.
+
+\subsection{Other remarks}
+
+\begin{remark}[Affine effects and the mixture model]
+If $\tau(Z_i)=a_iT(U)+(1-a_i)w_i$ with $a_i\in(0,1]$ and $w_i$ known, set $V_i=(F_i(Z_i)-(1-a_i)w_i)/a_i=T(U)+G_i(Z_i)/a_i$. If $a_i$ is a function of the view, all results hold with $G_i/a_i$ in place of $G_i$. If $a_i$ is hidden and random, a constant error $G\equiv c$ costs $\beta c^2\E(1/a_1-1/a_2)^2>0$ under agreement alone, so hidden scaling can replace the floor. This is the original embedding-mixture proposal; it requires a truth map that is affine along mixtures.
+\end{remark}
+
+\begin{remark}[Number of supervisors]
+The bounds do not improve with $n$. More supervisors reduce the sampling variance of realized payments and of the designer's estimate $\frac1n\sum_iV_i$, which the expected-payoff analysis does not capture.
+\end{remark}
+
+\begin{remark}[What the analysis does not cover]\label{r:open}
+(1) Supervisors who perceive the view with private noise; under quadratic agreement they would shrink reports toward a posterior mean. (2) Communication between supervisors, which would let them compare views and identify plants. (3) Repeated interaction and history-dependent strategies. (4) Temptation toward over-reporting, which needs a ceiling. (5) Convergence of learning dynamics; convexity holds in the space of reporting functions, not in network parameters. (6) Existence of equilibrium on infinite view spaces when $\bar s>0$; the bounds in Theorem~\ref{t:eq}(c) hold for any equilibrium that exists.
+\end{remark}
+
+\section{Numerical checks}\label{sec:numerics}
+
+All checks use finite models solved by minimizing the potential (L-BFGS) and, where stated, confirmed by best-response iteration. Baseline: genuine count in $\{0,1,2\}$ with probabilities $(0.8,0.15,0.05)$; plant count Poisson; each plant recognized independently with probability $p$; the view is the total count and the number of recognized plants; $\beta=1$.
+
+\begin{center}
+\begin{tabular}{@{}p{0.36\linewidth}p{0.58\linewidth}@{}}
+\toprule
+Statement & Check \\
+\midrule
+Lemma~\ref{l:agree} & 20{,}000 random pairs $(G_1,G_2)$: minimum ratio of loss to bound $1.07$. \\
+Theorem~\ref{t:zero}, Theorem~\ref{t:eq}(b) & No stake, $\lambda=0.4$: a start at shift $-0.5$ converges to $0.000$; a start at $+0.5$ stays at $+0.500$. \\
+Theorem~\ref{t:zero}(i),(ii) & Stake $b=0.2$: agreement alone diverges. Floor alone gives under-reporting $0.149$ on dirty originals; both terms give $0.082$, of which $0.062$ is blanket shading. \\
+Corollary~\ref{c:conceal} & Bound held in all 24 configurations (Poisson mean $0.7,1.5,3$; $p\in\{0,0.3,0.6,0.9\}$; two stake directions), within a factor of about two. \\
+Corollary~\ref{c:rm} & $\varepsilon=10^{-3},10^{-2}$: mean shift $-1.58\varepsilon$; the bound's rate is $\varepsilon/(\lbar p_0)=3.1\varepsilon$. \\
+Recognizability & Concealed share of genuine content: $6\%$ at $p=0$, $12\%$ at $p=0.8$, $32\%$ at $p=0.95$, all of it at $p=1$. \\
+Proposition~\ref{p:overlap} & Poisson mean $0.5,1.5,3,6$: $\eta=0.09,0.41,0.55,0.68$ against $\gamma=0.62,0.84,0.91,0.95$. \\
+Section~\ref{sec:signal} & Always-dirty context: shift $-1.03$ there, $-0.03$ elsewhere, at $b=0.02$. \\
+Proposition~\ref{p:coarse} & $p_0=0.8$, Poisson$(1.5)$: threshold $0.720$; hide-one is an equilibrium at $\lambda=0.2,0.5$ and fails at $0.8,1.0,1.2$. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Theorem~\ref{t:mis} and the $n=3$ case were checked on 24 further configurations with random residuals ($\varrho^2$ up to $0.57$); the bounds held in all of them and are loose by one to two orders of magnitude there, which reflects the unoptimized constants.
+
+\section{Relation to known results}
+
+The gap in Definition~\ref{d:gap} is one minus the squared Hirschfeld--Gebelein--Rényi maximal correlation \cite{renyi}, and Lemma~\ref{l:agree} is a form of Witsenhausen's bound on what two non-communicating parties can agree on \cite{witsenhausen}; $\cC$ is the Gács--Körner common part \cite{gk}. The potential argument follows Monderer and Shapley \cite{ms}. In peer prediction, truthful reporting is identified only up to relabeling \cite{ks}; the uniform shift in Theorem~\ref{t:zero}(i) is the analog here, and the planted floor is what removes it. Proposition~\ref{p:item}(ii) agrees with the finding that peer agreement can weaken spot-checking \cite{gao}. Checking a system through known input--output relations without labels is the idea of metamorphic testing \cite{segura} and of consistency checks for superhuman models \cite{fluri}; synthetic inputs for validating untrusted monitors, and the signal attack of Section~\ref{sec:signal}, come from AI control \cite{control}. I did not find the combination of hidden known-effect perturbations, cross-supervisor comparison, and an equilibrium bound in terms of maximal correlation, but the search was a spot check.
+
+\begin{thebibliography}{9}\small
+\bibitem{renyi} A. Rényi (1959). On measures of dependence. \emph{Acta Math. Acad. Sci. Hungar.} 10.
+\bibitem{witsenhausen} H. S. Witsenhausen (1975). On sequences of pairs of dependent random variables. \emph{SIAM J. Appl. Math.} 28(1).
+\bibitem{gk} P. Gács and J. Körner (1973). Common information is far less than mutual information. \emph{Probl. Control Inform. Theory} 2(2).
+\bibitem{ms} D. Monderer and L. Shapley (1996). Potential games. \emph{Games Econ. Behav.} 14.
+\bibitem{ks} Y. Kong and G. Schoenebeck (2016). Equilibrium selection in information elicitation without verification via information monotonicity. arXiv:1603.07751.
+\bibitem{gao} A. Gao, J. Wright, K. Leyton-Brown (2016). Incentivizing evaluation via limited access to ground truth: peer-prediction makes things worse. arXiv:1606.07042.
+\bibitem{segura} S. Segura, G. Fraser, A. Sanchez, A. Ruiz-Cortés (2016). A survey on metamorphic testing. \emph{IEEE Trans. Softw. Eng.} 42(9).
+\bibitem{fluri} L. Fluri, D. Paleka, F. Tramèr (2023). Evaluating superhuman models with consistency checks. arXiv:2306.09983.
+\bibitem{control} R. Greenblatt, B. Shlegeris, K. Sachan, F. Roger (2023). AI control: improving safety despite intentional subversion. arXiv:2312.06942.
+\end{thebibliography}
+\end{document}

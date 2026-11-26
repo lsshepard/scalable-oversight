@@ -1,0 +1,99 @@
+% Original CS2823 project proposal, as pasted by Liam into the planning conversation on 2026-11-16.
+% The file final-project-proposal/main.tex on Liam's machine was later found overwritten with the
+% word "double"; this copy and the exported PDF (~/Downloads/CS2823_Project_proposal.pdf) are the
+% surviving versions. If they differ, the PDF is authoritative.
+\documentclass{article}
+
+\PassOptionsToPackage{numbers,sort&compress}{natbib}
+% Non-anonymous version of the supplied NeurIPS 2025 template.
+\usepackage[preprint]{neurips_2025}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+
+\title{Honest Reporting through Hidden Perturbations\\in Scalable Oversight}
+
+\author{%
+  Liam Shepard \\
+  \texttt{liamshepard@g.harvard.edu} \\
+  CS2823: Final Project Proposal \\
+  Supervisor: Lily Lavitas
+}
+
+\begin{document}
+\maketitle
+
+\section{Background and motivation}
+
+Evaluating increasingly capable AI systems may require assistance from other models. Scalable oversight aims to make this assistance reliable, but capable supervisors may still have incentives to conceal problematic behavior. Rewarding agreement can reinforce coordinated false reports. This project investigates whether hidden perturbations can discourage dishonest coordination and support reliable oversight.
+
+\section{Key related work}
+
+Bergemann, Koh, and Morris's \emph{Mechanism Design for Alignment and Control}~\cite{bergemann2026} develops a general framework for influencing AI agents. Its stylized applications represent capability and alignment through a shared, low-dimensional action space; its oversight example incentivizes a weak monitor through its influence on a stronger model's subsequent actions. I am concerned that these representations are restrictive, and that real monitors may not care sufficiently about the future outcomes they can influence. My mechanism directly rewards reporting about already-produced outputs.
+
+Irving, Christiano, and Amodei's \emph{AI Safety via Debate}~\cite{irving2018} trains competing agents to debate before a human judge, helping evaluate questions beyond the judge's unaided capabilities.
+
+Qiu, Carroll, and Allen's \emph{Truthfulness Despite Weak Supervision}~\cite{qiu2026} uses peer-prediction rewards based on mutual predictability to evaluate and train LLMs without ground-truth labels. Its theoretical guarantees address unilateral deception and leave collusion open. I investigate whether hidden perturbations can rule out dishonest equilibria and support honest reporting through RL.
+
+\section{Problem statement}
+
+I will investigate when hidden perturbations make honest reporting the unique Nash equilibrium in a scalable oversight mechanism, then test whether these incentives support training honest supervisors.
+
+Each supervisor receives a differently perturbed version of the supervised model's output. Rewards combine agreement between reports, adjusted for known changes, with accurate reporting of planted behavior. Supervisors unable to distinguish planted from original behavior cannot reliably identify which false reports the mechanism can catch.
+
+I will first develop the theoretical model, assuming supervisors can interpret the relevant behavior, maximize the mechanism's reward, and cannot identify planted changes. I will examine how perturbations constrain dishonest strategies and whether the combined reward yields stronger guarantees than either component alone. The formulation of perturbations and supervisors' information remains open.
+
+The empirical setup will follow this analysis. Candidate material includes chain-of-thought traces from monitoring tasks and the Hugging Face incident~\cite{redwood2026}, but misconduct in a trace does not itself motivate dishonest supervision. I will test whether collusive instructions or supervisor-reasoning prefixes induce misreporting while allowing strategies to change with the reward. Existing monitoring-collusion and peer-verification experiments~\cite{jarviniemi2025,shi2026} offer starting points. Additional fine-tuning is an option if prompting proves insufficient.
+
+I will initially implement perturbations through predefined transformations in code and verify that the setup elicits misreporting from capable supervisors. RL experiments will test whether the mechanism restores honest reporting on original behavior or teaches supervisors to recognize planted changes, comparing against each reward component alone. Models, data size, perturbations, and reward implementation remain contingent on the theory and initial experiments.
+
+\section{Expected challenges and risks}
+
+The theoretical challenge is to model how perturbations affect both the reported behavior and supervisors' information about planted changes. Whether honest reporting is the unique equilibrium will depend on these assumptions.
+
+Empirically, perturbations must have known effects while remaining difficult to distinguish from original behavior. Detectable artifacts could enable honest reporting on planted behavior alongside misreporting elsewhere; training may make those artifacts easier to recognize.
+
+A third model trained adversarially to generate perturbations could reduce detectable artifacts, but adds another strategic player and opportunity for collusion. I will therefore begin with transformations implemented in code.
+
+Translating incentives into a stable training signal is another challenge: an equilibrium guarantee does not establish RL convergence. The reward must balance its components and remain useful as supervisors' policies change.
+
+Results against prompted collusion may not generalize to supervisors with independently acquired incentives to deceive. Creating such supervisors through additional training could substantially increase the project's scope.
+
+To distinguish systematic improvements from favorable RL runs, I will use independent training seeds, held-out evaluation examples, and confidence intervals reflecting variation across runs and examples.
+
+\begin{thebibliography}{9}
+\small
+
+\bibitem{bergemann2026}
+Bergemann, Koh, and Morris. (2026).
+\href{https://arxiv.org/abs/2609.01595}{\emph{Mechanism Design for Alignment and Control}}.
+
+\bibitem{irving2018}
+Irving, Christiano, and Amodei. (2018).
+\href{https://arxiv.org/abs/1805.00899}{\emph{AI Safety via Debate}}.
+
+\bibitem{qiu2026}
+Qiu, Carroll, and Allen. (2026).
+\href{https://arxiv.org/abs/2601.20299}{\emph{Truthfulness Despite Weak Supervision: Evaluating and Training LLMs Using Peer Prediction}}.
+
+\bibitem{redwood2026}
+Ryan Greenblatt, Ajeya Cotra, and Hjalmar Wijk. (2026).
+\href{https://www.redwoodresearch.org/research/hugging-face-incident}{\emph{Brief Independent Investigation of Agents' Behavior, Reasoning and Collaboration in the OpenAI / Hugging Face Hacking Incident}}.
+
+\bibitem{jarviniemi2025}
+Olli J\"arviniemi. (2025).
+\href{https://arxiv.org/abs/2507.03010}{\emph{Subversion via Focal Points: Investigating Collusion in LLM Monitoring}}.
+
+\bibitem{shi2026}
+Xinrui Shi, Yanzhe Zhang, and Diyi Yang. (2026).
+\href{https://arxiv.org/abs/2609.24967}{\emph{Emergent Collusion in Long-Horizon LLM Agent Interaction}}.
+
+\end{thebibliography}
+\end{document}
