@@ -82,6 +82,36 @@ def load(feats: pathlib.Path, cond: str, split: str):
     return data, (z["X"], z["H"])
 
 
+N_LP = 3   # the last three line features are the model's log-probabilities of the stated result
+
+
+def fit_reduction(data: dict, X: np.ndarray, H: np.ndarray, k: int, seed: int = 0):
+    """Principal components (fit on training lines) of the hidden-state part of the line
+    features and of the header features; the log-probability features are kept as they are.
+    Without it the heads fit the full hidden states of a few thousand ledgers within a few
+    hundred steps and generalise poorly."""
+    import torch
+    rng = np.random.default_rng(seed)
+    lines = X[data["status"] >= 0][:, :-N_LP]
+    lines = lines[rng.choice(len(lines), min(len(lines), 60000), replace=False)]
+    heads = H.reshape(-1, H.shape[-1])
+    out = []
+    for A in (lines, heads):
+        A = torch.as_tensor(A, dtype=torch.float32)
+        mu, sd = A.mean(0), A.std(0).clamp_min(1e-3)
+        _, _, V = torch.pca_lowrank((A - mu) / sd, q=k, center=False, niter=4)
+        out.append((mu.numpy(), sd.numpy(), V.numpy()))
+    return out
+
+
+def apply_reduction(red, X: np.ndarray, H: np.ndarray):
+    (mx, sx, Vx), (mh, sh, Vh) = red
+    hid = (X[..., :-N_LP].astype(np.float32) - mx) / sx @ Vx
+    Xr = np.concatenate([hid, X[..., -N_LP:].astype(np.float32)], -1)
+    Hr = (H.astype(np.float32) - mh) / sh @ Vh
+    return Xr.astype(np.float32), Hr.astype(np.float32)
+
+
 def reward(kind: str, b: float, eps: float) -> Reward:
     """mechanism = adjusted agreement + planted floor; the other two drop one term."""
     beta, lam = dict(mechanism=(1.0, 1.0), agree_only=(1.0, 0.0), floor_only=(0.0, 1.0))[kind]
@@ -177,17 +207,65 @@ def cmd_train(args):
     import torch
     feats = pathlib.Path(args.feats)
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
-    cache = {}
+    cache, reds = {}, {}
     def get(cond, split):
         if (cond, split) not in cache:
-            cache[(cond, split)] = load(feats, cond, split)
+            data, (X, H) = load(feats, cond, split)
+            if args.reduce:
+                if cond not in reds:
+                    dtr, (Xtr, Htr) = (data, (X, H)) if split == "train" else load(feats, cond, "train")
+                    reds[cond] = fit_reduction(dtr, Xtr, Htr, args.reduce)
+                X, H = apply_reduction(reds[cond], X, H)
+            if args.lp_only:
+                X, H = X[..., -N_LP:], H[..., :1] * 0
+            cache[(cond, split)] = (data, (X, H))
         return cache[(cond, split)]
     plan = [r for name in args.plans for r in PLANS[name]]
     rows = run_plan(plan, get, dict(steps=args.steps, estimators=args.estimators, lr=args.lr, batch=args.batch,
                                     sigma=args.sigma, weight_decay=args.weight_decay), range(args.seeds), device)
-    out = pathlib.Path(args.out or feats / f"train_{'_'.join(args.plans)}.json")
+    for r in rows:
+        r.update(reduce=args.reduce, lp_only=args.lp_only, feats=str(feats))
+    tag = f"_r{args.reduce}" if args.reduce else ""
+    tag += "_lp" if args.lp_only else ""
+    out = pathlib.Path(args.out or feats / f"train_{'_'.join(args.plans)}{tag}.json")
     out.write_text(json.dumps(rows))
     print(f"written {out}")
+
+
+def cmd_probe(args):
+    """Per line: is the line wrong?  Logistic regression on the log-probabilities alone, on
+    reduced hidden states alone, and on both; AUC on test lines, catch rate at 1% false alarms,
+    and the error of the per-view count obtained by summing the predicted probabilities."""
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import roc_auc_score
+    res = []
+    for f in args.feats:
+        feats = pathlib.Path(f)
+        for cond in args.conds:
+            try:
+                dtr, (Xtr, Htr) = load(feats, cond, "train"); dte, (Xte, Hte) = load(feats, cond, "test")
+            except FileNotFoundError:
+                continue
+            red = fit_reduction(dtr, Xtr, Htr, args.reduce)
+            Xtr, _ = apply_reduction(red, Xtr, Htr); Xte, _ = apply_reduction(red, Xte, Hte)
+            mtr, mte = dtr["status"] >= 0, dte["status"] >= 0
+            ytr, yte = dtr["status"][mtr] > 0, dte["status"][mte] > 0
+            for name, cols in (("logprob", slice(-N_LP, None)), ("hidden", slice(0, -N_LP)), ("both", slice(None))):
+                a, b = Xtr[mtr][:, cols], Xte[mte][:, cols]
+                mu, sd = a.mean(0), a.std(0) + 1e-6
+                clf = LogisticRegression(C=1.0, max_iter=2000).fit((a - mu) / sd, ytr)
+                p = clf.predict_proba((b - mu) / sd)[:, 1]
+                thr = np.quantile(p[~yte], 0.99)
+                P = np.zeros(dte["status"].shape); P[mte] = p
+                cnt = P.sum(-1)
+                row = dict(feats=f, cond=cond, features=name, auc=float(roc_auc_score(yte, p)),
+                           catch_at_1pct=float((p[yte] > thr).mean()),
+                           count_rmse=float(np.sqrt(((cnt - dte["K"]) ** 2).mean())))
+                res.append(row)
+                print(f"{feats.name:32s} {cond:7s} {name:8s} AUC {row['auc']:.3f}  caught@1%FA {row['catch_at_1pct']:.3f}  "
+                      f"count rmse {row['count_rmse']:.2f}", flush=True)
+    if args.out:
+        pathlib.Path(args.out).write_text(json.dumps(res, indent=1))
 
 
 def cmd_e2e(args):
@@ -244,6 +322,11 @@ if __name__ == "__main__":
     tr = sub.add_parser("train"); _train_args(tr)
     tr.add_argument("--feats", required=True); tr.add_argument("--device", default="")
     tr.add_argument("--weight-decay", type=float, default=0.0)
+    tr.add_argument("--reduce", type=int, default=0, help="principal components of the hidden states (0 = all)")
+    tr.add_argument("--lp-only", action="store_true", help="only the log-probability features")
+    pr = sub.add_parser("probe", help="per-line logistic probes: how well each model sees wrong lines")
+    pr.add_argument("--feats", nargs="+", required=True); pr.add_argument("--conds", nargs="+", default=["hidden"])
+    pr.add_argument("--reduce", type=int, default=64); pr.add_argument("--out", default="")
     e = sub.add_parser("extract")
     e.add_argument("--model", required=True); e.add_argument("--adapter", default="")
     e.add_argument("--conds", nargs="+", default=["hidden"])
@@ -266,4 +349,4 @@ if __name__ == "__main__":
     if args.threads:
         import torch
         torch.set_num_threads(args.threads)
-    dict(extract=cmd_extract, synth=cmd_synth, train=cmd_train, e2e=cmd_e2e)[args.cmd](args)
+    dict(extract=cmd_extract, synth=cmd_synth, train=cmd_train, e2e=cmd_e2e, probe=cmd_probe)[args.cmd](args)
