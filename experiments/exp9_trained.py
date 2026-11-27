@@ -173,14 +173,37 @@ def cmd_synth(args):
         pathlib.Path(args.out).write_text(json.dumps(rows))
 
 
+def reduce_features(ftrain, ftest, mask_train, hidden: int, k: int):
+    """Label-free reduction for small machines: per layer, the first k principal directions of
+    the line features (fitted on the training lines); the three log-probability columns are kept."""
+    Xtr, Htr = (np.asarray(a, np.float32) for a in ftrain)
+    Xte, Hte = (np.asarray(a, np.float32) for a in ftest)
+    n_layers = (Xtr.shape[-1] - 3) // hidden
+    out_tr, out_te = [], []
+    for j in range(n_layers):
+        blk = slice(j * hidden, (j + 1) * hidden)
+        lines = Xtr[..., blk][mask_train]
+        mu = lines.mean(0)
+        U = np.linalg.svd(lines[:20000] - mu, full_matrices=False)[2][:k]
+        out_tr.append((Xtr[..., blk] - mu) @ U.T); out_te.append((Xte[..., blk] - mu) @ U.T)
+    out_tr.append(Xtr[..., -3:]); out_te.append(Xte[..., -3:])
+    flat = Htr.reshape(-1, Htr.shape[-1]); mu = flat.mean(0)
+    U = np.linalg.svd(flat[:20000] - mu, full_matrices=False)[2][:16]
+    return (np.concatenate(out_tr, -1), (Htr - mu) @ U.T), (np.concatenate(out_te, -1), (Hte - mu) @ U.T)
+
+
 def cmd_train(args):
     import torch
     feats = pathlib.Path(args.feats)
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
+    hidden = json.loads((feats / "meta.json").read_text())["hidden"] if args.pca else 0
     cache = {}
     def get(cond, split):
         if (cond, split) not in cache:
-            cache[(cond, split)] = load(feats, cond, split)
+            (dtr, ftr), (dte, fte) = load(feats, cond, "train"), load(feats, cond, "test")
+            if args.pca:
+                ftr, fte = reduce_features(ftr, fte, dtr["status"] >= 0, hidden, args.pca)
+            cache[(cond, "train")], cache[(cond, "test")] = (dtr, ftr), (dte, fte)
         return cache[(cond, split)]
     plan = [r for name in args.plans for r in PLANS[name]]
     rows = run_plan(plan, get, dict(steps=args.steps, estimators=args.estimators, lr=args.lr, batch=args.batch,
@@ -244,6 +267,7 @@ if __name__ == "__main__":
     tr = sub.add_parser("train"); _train_args(tr)
     tr.add_argument("--feats", required=True); tr.add_argument("--device", default="")
     tr.add_argument("--weight-decay", type=float, default=0.0)
+    tr.add_argument("--pca", type=int, default=0, help="keep this many principal directions per layer (0 = all features)")
     e = sub.add_parser("extract")
     e.add_argument("--model", required=True); e.add_argument("--adapter", default="")
     e.add_argument("--conds", nargs="+", default=["hidden"])
