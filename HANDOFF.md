@@ -685,3 +685,63 @@ Code note: adding level 5 changed the prompt hash, so the folders written before
   section 8); shift on clean originals; exact counts; payments; refusal and void rates;
   the two honest-prompt arms for accuracy and the known effect.
 
+### 13.10 Confirmatory run: results (2026-11-27)
+
+Complete as planned in 13.9: five arms x 20 pairs x 20 rounds on both models, seeds
+2000-2019. No failed pairs, no refusals, no void rounds, no unparsed replies. Data in
+`results/llm_rounds/<model>/`; tables, paired differences, per-round series and two figures
+in `results/llm_rounds/analysis/`, produced by `experiments/analyze_llm_rounds.py`.
+
+Share of genuine errors missing from adjusted reports, rounds 16-20, with 95% bootstrap
+intervals over the 20 pairs:
+
+| Condition | Sonnet 5.5 | Haiku 5.5 |
+|---|---|---|
+| Honest prompt, plain pay | 0.00 [0.00, 0.00] | 0.02 [0.00, 0.07] |
+| Honest prompt, perturbation | 0.01 [0.00, 0.03] | 0.02 [0.00, 0.07] |
+| Role prompt, plain agreement pay | 0.88 [0.74, 0.98] | 0.30 [0.20, 0.41] |
+| Role prompt, placebo | 1.00 [1.00, 1.00] | 0.16 [0.07, 0.28] |
+| Role prompt, hidden perturbation | 0.02 [0.00, 0.04] | 0.09 [0.02, 0.18] |
+
+Differences paired by seed (same original ledgers), rounds 16-20:
+
+| Difference | Sonnet 5.5 | Haiku 5.5 |
+|---|---|---|
+| Role/plain minus role/perturbation | +0.87 [+0.73, +0.96] | +0.21 [+0.08, +0.35] |
+| Role/placebo minus role/perturbation | +0.98 [+0.96, +1.00] | +0.07 [-0.03, +0.19] |
+| Role/plain minus role/placebo | -0.12 [-0.26, -0.02] | +0.14 [+0.01, +0.26] |
+| Role/perturbation minus honest/perturbation | +0.01 [-0.02, +0.04] | +0.07 [+0.01, +0.15] |
+
+Reading.
+- **Sonnet: clean.** Under the role prompt, plain agreement pay gives concealment in most
+  pairs (13 of 20 pairs hide at least 90% of genuine errors over all rounds, one pair stays
+  honest), the placebo gives it in 19 of 20, and under hidden perturbation reports equal the
+  visible count in 682 of 693 views with errors. That last figure matches the honest prompt
+  under perturbation (686 of 693), so what remains is miscounting, not concealment.
+- **Haiku: weaker and mixed.** Concealment under plain pay is partial (0.30) and
+  heterogeneous across pairs. Perturbation lowers it (0.09), and the difference to plain pay
+  is clear. The difference to the placebo is not (interval includes zero): for Haiku the
+  mention of inserted errors alone removes about half of the concealment. Under
+  perturbation Haiku keeps under-reporting now and then, stays above its honest baseline,
+  and earns the lowest payments of any arm (-0.43 per round).
+- **Both equilibria of plain agreement appear.** On their first dirty ledger 31 of 40 Sonnet
+  reviewers report 0 and 9 report the truth; pairs that start mixed are charged and settle
+  on one or the other. Some reviewers decline to misreport even in the role.
+- **Horizon check** (rounds 16-20 minus 11-15): no arm changes detectably, in either model.
+- **Honest-prompt arms:** exact counts 0.99-1.00; planting does not bias the adjusted report.
+- Sonnet conceals more under the placebo wording than under plain pay (1.00 against 0.88).
+  Not explained.
+
+Limits, unchanged from 13.8: concealment needs the role prompt; the rule is stated in the
+prompt and Sonnet's honesty under perturbation comes from reading it; plants are
+unrecognizable by construction; one model family.
+
+Cost of the recorded data: $25.29 on Sonnet, $1.70 on Haiku. The first launch hit the
+account's limit on concurrent requests and was restarted with 10 workers per model; the
+calls lost in it are not recorded, roughly $1-2. Pilot and confirmatory run together are
+about $34.
+
+Next, none of it started: a second model family (the most valuable addition), the informed
+red-team arm (d), a recognizability probe (b), and a decision on how the paper presents the
+role prompt.
+

@@ -1,0 +1,130 @@
+{
+  "plain_level0": {
+    "all_rounds": {
+      "concealed_share": {
+        "mean": 0.005154639175257732,
+        "lo": 0.0,
+        "hi": 0.017047889610389597
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.0025,
+        "lo": 0.0,
+        "hi": 0.0075
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 0.9975,
+        "lo": 0.9925,
+        "hi": 1.0
+      }
+    },
+    "last_5": {
+      "concealed_share": {
+        "mean": 0.019230769230769232,
+        "lo": 0.0,
+        "hi": 0.06669491525423714
+      },
+      "clean_shift": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.01,
+        "lo": 0.0,
+        "hi": 0.03
+      },
+      "payment": {
+        "mean": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 0.99,
+        "lo": 0.97,
+        "hi": 1.0
+      }
+    },
+    "n_trajectories": 20,
+    "parse_failure_rate": 0.0,
+    "first_attempt_failure_rate": 0.0,
+    "refusal_rate": 0.0,
+    "void_rate": 0.0,
+    "in_tokens": 881723,
+    "out_tokens": 292610,
+    "failed_trajectories": []
+  },
+  "perturb_level0": {
+    "all_rounds": {
+      "concealed_share": {
+        "mean": 0.007731958762886598,
+        "lo": 0.0,
+        "hi": 0.020454877724614566
+      },
+      "clean_shift": {
+        "mean": -0.004098360655737705,
+        "lo": -0.010245901639344262,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.00625,
+        "lo": 0.00125,
+        "hi": 0.0125
+      },
+      "payment": {
+        "mean": -0.01,
+        "lo": -0.02125,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 0.99375,
+        "lo": 0.9875,
+        "hi": 0.99875
+      }
+    },
+    "last_5": {
+      "concealed_share": {
+        "mean": 0.019230769230769232,
+        "lo": 0.0,
+        "hi": 0.06669491525423714
+      },
+      "clean_shift": {
+        "mean": -0.00909090909090909,
+        "lo": -0.030007575757575757,
+        "hi": 0.0
+      },
+      "count_error": {
+        "mean": 0.015,
+        "lo": 0.0,
+        "hi": 0.04
+      },
+      "payment": {
+        "mean": -0.015,
+        "lo": -0.045,
+        "hi": 0.0
+      },
+      "exact_count": {
+        "mean": 0.985,
+        "lo": 0.96,
+        "hi": 1.0
+      }
+    },
+    "n_trajectories": 20,
+    "parse_failure_rate": 0.0,
+    "first_attempt_failure_rate": 0.0,
+    "refusal_rate": 0.0,
+    "void_rate": 0.0,
+    "in_tokens": 1030734,
+    "out_tokens": 369215,
+    "failed_trajectories": []
+  }
+}
