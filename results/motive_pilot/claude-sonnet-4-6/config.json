@@ -1,0 +1,13 @@
+{
+  "model": "claude-sonnet-4-6",
+  "effort": "medium",
+  "rounds": 10,
+  "stake": 0.5,
+  "p_genuine": [
+    0.6,
+    0.3,
+    0.1
+  ],
+  "parse_retries": 1,
+  "protocol": "exp8-v2-careful"
+}
