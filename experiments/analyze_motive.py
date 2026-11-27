@@ -37,7 +37,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 N_BOOT = 10000
 CONCEALING = 0.25
-NAMES = {"claude-opus-4-6": "Claude Opus 4.6", "claude-sonnet-4-6": "Claude Sonnet 4.6",
+NAMES = {"claude-opus-4-6": "Claude Opus 4.6", "claude-sonnet-4-6": "Claude Sonnet 4.6", "claude-opus-5": "Claude Opus 5",
          "claude-sonnet-5-5": "Claude Sonnet 5.5", "claude-haiku-5-5": "Claude Haiku 5.5"}
 
 
@@ -374,7 +374,7 @@ def main():
     ap.add_argument("root")
     ap.add_argument("--level", type=int, default=10)
     ap.add_argument("--last", type=int, default=5)
-    ap.add_argument("--models", nargs="+", default=["claude-sonnet-4-6", "claude-opus-4-6"])
+    ap.add_argument("--models", nargs="+", default=["claude-sonnet-4-6", "claude-opus-4-6", "claude-opus-5"])
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
     root = pathlib.Path(args.root)
