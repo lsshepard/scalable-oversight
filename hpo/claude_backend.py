@@ -39,7 +39,34 @@ PRICES = {
     "claude-haiku-5-5": (0.10, 0.50),
     "claude-sonnet-5-5": (2.00, 10.00),
     "claude-opus-5-5": (4.00, 20.00),
+    # earlier generations, same price table
+    "claude-sonnet-5": (2.00, 10.00),
+    "claude-opus-5": (5.00, 25.00),
+    "claude-opus-4-8": (5.00, 25.00),
+    "claude-opus-4-7": (5.00, 25.00),
+    "claude-opus-4-6": (5.00, 25.00),
+    "claude-sonnet-4-6": (3.00, 15.00),
+    "claude-haiku-4-5": (1.00, 5.00),
 }
+
+
+def request_shape(model: str, effort: Optional[str], max_tokens: int) -> dict:
+    """Model-dependent request fields.
+
+    Claude Haiku 4.5 has neither adaptive thinking nor `effort`; it is called without
+    thinking and reasons in its visible reply.  The 4.6 models take adaptive thinking
+    without the `display` field (their summaries are on by default).  Later models take
+    adaptive thinking with summaries switched on."""
+    req = dict(model=model, max_tokens=max_tokens)
+    if model.startswith("claude-haiku-4-5"):
+        return req
+    if model in ("claude-opus-4-6", "claude-sonnet-4-6"):
+        req["thinking"] = {"type": "adaptive"}
+    else:
+        req["thinking"] = {"type": "adaptive", "display": "summarized"}
+    if effort:
+        req["output_config"] = {"effort": effort}
+    return req
 
 
 def claude_backend(model: str, effort: Optional[str] = None, max_tokens: int = 16000,
@@ -58,10 +85,7 @@ def claude_backend(model: str, effort: Optional[str] = None, max_tokens: int = 1
         del os.environ[name]
     client = anthropic.Anthropic(api_key=key, base_url=base_url,
                                  max_retries=max_retries, timeout=timeout)
-    request = dict(model=model, max_tokens=max_tokens,
-                   thinking={"type": "adaptive", "display": "summarized"})
-    if effort:
-        request["output_config"] = {"effort": effort}
+    request = request_shape(model, effort, max_tokens)
 
     def complete(system: str, user: str) -> Reply:
         try:
