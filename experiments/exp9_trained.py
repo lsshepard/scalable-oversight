@@ -264,6 +264,15 @@ def cmd_probe(args):
                 res.append(row)
                 print(f"{feats.name:32s} {cond:7s} {name:8s} AUC {row['auc']:.3f}  caught@1%FA {row['catch_at_1pct']:.3f}  "
                       f"count rmse {row['count_rmse']:.2f}", flush=True)
+            wtr, wte = dtr["status"][mtr] > 0, dte["status"][mte] > 0
+            ttr, tte = dtr["tell"][mtr][wtr], dte["tell"][mte][wte]
+            if 0 < ttr.mean() < 1:   # among wrong lines: does the line carry the tell?
+                a, b = Xtr[mtr][wtr][:, :-N_LP], Xte[mte][wte][:, :-N_LP]
+                mu, sd = a.mean(0), a.std(0) + 1e-6
+                p = LogisticRegression(C=1.0, max_iter=2000).fit((a - mu) / sd, ttr).predict_proba((b - mu) / sd)[:, 1]
+                row = dict(feats=f, cond=cond, features=f"tell|wrong, {args.reduce} PCs", auc=float(roc_auc_score(tte, p)))
+                res.append(row)
+                print(f"{feats.name:32s} {cond:7s} tell among wrong lines, {args.reduce} PCs: AUC {row['auc']:.3f}", flush=True)
     if args.out:
         pathlib.Path(args.out).write_text(json.dumps(res, indent=1))
 
