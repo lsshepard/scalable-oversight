@@ -836,3 +836,65 @@ a third, more recent model, the same protocol is run on `claude-opus-5` at a sma
 goal with plain and perturb, 10 pairs each; goal with placebo, 6 pairs; honest prompt with
 perturb, 6 pairs, and with plain, 4 pairs. Same seeds, rounds and outcomes as above.
 
+
+### 13.14 Confirmatory run without a role prompt: results (2026-11-27)
+
+Paper-facing write-up with all tables, limits and unconfirmed choices: **`REPORT_LLM.md`**.
+Data `results/motive_main/<model>/`, analysis `results/motive_main/analysis/` (`table.md`,
+`table.tex`, `paired.csv`, `pairs.csv`, `detection.csv`, `by_round.csv`, three figures as PNG
+and PDF). Headline numbers were recomputed from the raw records by a second, independent
+script and agree; the payments in every record were recomputed from the rule and agree.
+
+Run as planned in 13.13. No void rounds. No refusals on Sonnet 4.6 or Opus 4.6. Opus 5: 3 of
+1,080 first replies were stopped by the API as refusals and gave a report on the retry.
+
+Concealed share in rounds 11-15 (capped measure) and charge per reviewer per round:
+
+| Model | honest, plain | honest, perturb | goal, plain | goal, placebo | goal, perturb | charge: goal plain / goal perturb |
+|---|---|---|---|---|---|---|
+| Sonnet 4.6 | 0.11 | 0.03 | 0.99 | 0.42 | 0.23 | 0.02 / 0.65 |
+| Opus 4.6 | 0.00 | 0.03 | 1.00 | 1.00 | 1.00 | 0.02 / 7.10 |
+| Opus 5 | 0.00 | 0.00 | 0.90 | 1.00 | 0.03 | 0.03 / 0.18 |
+
+- Paired by seed, plain minus perturb: Sonnet 4.6 +0.76 [0.65, 0.86] (15 of 16 pairs higher,
+  none lower); Opus 5 +0.88 [0.71, 0.98] (10 of 10); Opus 4.6 0.00 with charge +7.08
+  [6.30, 7.80].
+- Placebo minus perturb: Sonnet 4.6 +0.19 [0.04, 0.37]; Opus 5 +0.94 [0.79, 1.00]. For Sonnet
+  4.6 the placebo alone explains most of the drop (0.56 of 0.76).
+- Opus 4.6 reports 0 in all 480 reports under perturbation and says the penalties are an
+  acceptable cost. Charge 7.10 = 2.98 agreement + 4.12 floor; expected for "always report 0":
+  3.00 + 3.75 = 6.75.
+- Does the charge show who conceals (AUC, goal and honest pairs pooled): plain pay 0.49 /
+  0.53 / 0.70; perturbation 0.89 / 1.00 / 1.00 (Sonnet 4.6 / Opus 4.6 / Opus 5).
+- Concealment under plain pay starts on the first dirty ledger (30 of 32, 31 of 32, 20 of 20
+  reviewers), so it is tacit and not learned. Under perturbation Opus 5 reasons from the
+  stated rule in round 1. Nothing here tests learning from payments alone.
+- Sonnet 4.6 miscounts (7% of honest reports under perturbation are too low); concealment
+  under perturbation does not decline over rounds; one pair conceals deliberately throughout.
+- Opus 5 under plain pay: 5 of 112 reports on dirty ledgers turn honest in rounds 10-15 on
+  stated ethical grounds, and each costs the pair a point.
+
+**Reading (Claude's, unconfirmed).** The mechanism deters a supervisor that weighs its
+payments (Opus 5, most Sonnet 4.6 pairs) and exposes one that does not (Opus 4.6). Under plain
+agreement the same concealment is free and invisible.
+
+**Corrections to earlier statements in this file.** 13.13 called Sonnet 4.6 the model that
+"weighs payments"; the confirmatory run shows a large placebo effect for it, so the clean
+deterrence case is Opus 5. The concealed share in 13.8-13.10 (experiment 1) is the net
+measure; 13.14 and `analyze_motive.py` use the capped measure and report both.
+
+**Spend.** Recorded in result files: experiment 1 $32.82; experiment 2 pilots $10.33; screen
+$17.13; pilot $7.26; confirmatory $48.96 (Sonnet 4.6 $11.86, Opus 4.6 $22.23, Opus 5 $14.87);
+about $0.75 for discarded calibration cells. Since Liam set the $80 target: $84.44. No further
+paid runs without his word. No RunPod key was added and no GPU was used.
+
+**Open, all Liam's.**
+1. Wording of the goal sentence and of the other choices listed in `REPORT_LLM.md` section 9.
+2. How the paper presents the three behaviours (deterred, mostly deterred, exposed).
+3. Next experiment, in the order Claude would take them: (a) a second model family, to remove
+   "Claude only" (needs another provider key; the engine has an OpenAI-compatible backend);
+   (b) the payments-only variant, where the rule is not stated; (c) experiment 2 in full, for
+   which reward term matters and for recognizability (three open choices in
+   `docs/experiment2_design.md` section 9); (d) RL on an open-weight model with a rented GPU.
+4. Still unknown: the paper deadline, Lily Lavitas's answer on "theory first", the outcome of
+   the 2026-11-06 meeting, and whether the code should also go on `main`.

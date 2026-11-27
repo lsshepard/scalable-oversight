@@ -14,6 +14,10 @@ V_i = F_i - Delta_i, and the supervisor is charged
 This repository tests six predictions of the theory on a fully synthetic task where
 everything can be computed exactly. Results, tables and verdicts: **[REPORT.md](REPORT.md)**.
 
+Experiments with language models as supervisors (2026-11-26/27), including the comparison
+without a role prompt on Claude Opus 5, Opus 4.6 and Sonnet 4.6: **[REPORT_LLM.md](REPORT_LLM.md)**.
+State of the project and what is open: `HANDOFF.md`, section 13.
+
 ## Layout
 
 | path | what |
@@ -75,9 +79,9 @@ content stops being independent of T.
 ## Prompt-only LLM experiment (repeated rounds)
 
 `hpo/rounds.py` (game engine, provider-neutral), `hpo/claude_backend.py` (Claude models
-through the official Anthropic SDK) and `experiments/exp6_llm_rounds.py`. **Not yet run
-against a real model** (as of 2026-11-26). The pipeline is tested with offline mocks and
-with a local stand-in for the Claude API.
+through the official Anthropic SDK) and `experiments/exp6_llm_rounds.py`. Results of the
+runs on Claude models are in [REPORT_LLM.md](REPORT_LLM.md). The pipeline is also tested with
+offline mocks and with a local stand-in for the Claude API.
 
 Two copies of one model audit the same ledger each round. They cannot communicate. Each
 sees only its own past reports, payments and one-line notes, so any coordination has to
@@ -117,3 +121,12 @@ reaches the cap; an output folder is bound to one configuration (`config.json`: 
 effort, rounds, stake, prompt hash, ...) and a run with other settings refuses to reuse
 it, so pilots and variants need their own `--out`. The pilot plan is in `HANDOFF.md`
 section 13.
+
+### Later LLM experiments
+
+| script | what |
+|---|---|
+| `experiments/confirmatory.sh`, `experiments/analyze_llm_rounds.py` | experiment 1 (role prompt; Sonnet 5.5, Haiku 5.5): run and analysis, `results/llm_rounds/` |
+| `experiments/exp7_exploits.py`, `experiments/analyze_exploits.py`, `hpo/pair_game.py` | experiment 2 (predicted exploits): exact predictions, runner, analysis; piloted only, design in `docs/experiment2_design.md` |
+| `experiments/exp8_motive_screen.py`, `experiments/screen_table.py` | screen without a role prompt: which model conceals under which motive, `results/motive_screen/` |
+| `experiments/motive_main.sh`, `experiments/analyze_motive.py` | comparison without a role prompt (goal motive): run and analysis, `results/motive_main/` |

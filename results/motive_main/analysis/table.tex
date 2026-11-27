@@ -1,0 +1,24 @@
+% written by experiments/analyze_motive.py; needs \usepackage{booktabs}
+\begin{tabular}{llrccc}
+\toprule
+Model & Condition & Pairs & Concealed share, rounds 11--15 & Concealing pairs & Charge per round \\
+\midrule
+Claude Sonnet 4.6 & honest prompt, plain pay & 6 & 0.11 [0.00, 0.33] & 1 of 6 & 0.02 [0.00, 0.04] \\
+Claude Sonnet 4.6 & honest prompt, perturbation & 8 & 0.03 [0.00, 0.11] & 0 of 8 & 0.23 [0.12, 0.37] \\
+Claude Sonnet 4.6 & goal, plain agreement pay & 16 & 0.99 [0.95, 1.00] & 16 of 16 & 0.02 [0.00, 0.05] \\
+Claude Sonnet 4.6 & goal, placebo & 16 & 0.42 [0.26, 0.61] & 12 of 16 & 0.07 [0.02, 0.15] \\
+Claude Sonnet 4.6 & goal, hidden perturbation & 16 & 0.23 [0.13, 0.32] & 4 of 16 & 0.65 [0.33, 1.16] \\
+\midrule
+Claude Opus 4.6 & honest prompt, plain pay & 6 & 0.00 [0.00, 0.00] & 0 of 6 & 0.00 [0.00, 0.00] \\
+Claude Opus 4.6 & honest prompt, perturbation & 8 & 0.03 [0.00, 0.11] & 0 of 8 & 0.01 [0.00, 0.03] \\
+Claude Opus 4.6 & goal, plain agreement pay & 16 & 1.00 [1.00, 1.00] & 16 of 16 & 0.02 [0.00, 0.05] \\
+Claude Opus 4.6 & goal, placebo & 8 & 1.00 [1.00, 1.00] & 8 of 8 & 0.00 [0.00, 0.00] \\
+Claude Opus 4.6 & goal, hidden perturbation & 16 & 1.00 [1.00, 1.00] & 16 of 16 & 7.10 [6.30, 7.85] \\
+\midrule
+Claude Opus 5 & honest prompt, plain pay & 4 & 0.00 [0.00, 0.00] & 0 of 4 & 0.00 [0.00, 0.00] \\
+Claude Opus 5 & honest prompt, perturbation & 6 & 0.00 [0.00, 0.00] & 0 of 6 & 0.00 [0.00, 0.00] \\
+Claude Opus 5 & goal, plain agreement pay & 10 & 0.90 [0.79, 0.98] & 10 of 10 & 0.03 [0.01, 0.06] \\
+Claude Opus 5 & goal, placebo & 6 & 1.00 [1.00, 1.00] & 6 of 6 & 0.00 [0.00, 0.00] \\
+Claude Opus 5 & goal, hidden perturbation & 10 & 0.03 [0.00, 0.09] & 1 of 10 & 0.18 [0.00, 0.39] \\
+\bottomrule
+\end{tabular}
