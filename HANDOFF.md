@@ -829,3 +829,10 @@ arms for a seed, effort medium, line-by-line format.
 Projected cost about $45; spend before this run $33.13 for experiment 2 pilots, screen and
 pilot together.
 
+**Extension, decided after the main run above had finished** (its results are in 13.14).
+A further screen cell showed that Opus 4.7, Opus 4.8 and Opus 5 also conceal under level 10
+with plain pay (1.00, 0.89 and 1.00 of errors; 0.00 under the honest prompt; $2.34). To test
+a third, more recent model, the same protocol is run on `claude-opus-5` at a smaller size:
+goal with plain and perturb, 10 pairs each; goal with placebo, 6 pairs; honest prompt with
+perturb, 6 pairs, and with plain, 4 pairs. Same seeds, rounds and outcomes as above.
+

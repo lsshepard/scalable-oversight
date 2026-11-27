@@ -1,0 +1,25 @@
+model,difference,pairs,outcome,mean,lo,hi
+claude-sonnet-4-6,plain_level10 - perturb_level10,16,concealed_late,0.7564102564102564,0.6499999999999999,0.8571428571428572
+claude-sonnet-4-6,plain_level10 - perturb_level10,16,concealed_all,0.8303571428571428,0.7446808510638299,0.8968253968253969
+claude-sonnet-4-6,plain_level10 - perturb_level10,16,charge,-0.6291666666666667,-1.1125520833333333,-0.3208333333333333
+claude-sonnet-4-6,placebo_level10 - perturb_level10,16,concealed_late,0.1923076923076923,0.042857142857142844,0.3666666666666667
+claude-sonnet-4-6,placebo_level10 - perturb_level10,16,concealed_all,0.3214285714285714,0.12903225806451613,0.5364615091463414
+claude-sonnet-4-6,placebo_level10 - perturb_level10,16,charge,-0.5708333333333334,-1.11046875,-0.225
+claude-sonnet-4-6,plain_level10 - placebo_level10,16,concealed_late,0.5641025641025641,0.3676225490196079,0.7261960916442048
+claude-sonnet-4-6,plain_level10 - placebo_level10,16,concealed_all,0.5089285714285714,0.301638451968364,0.6964285714285714
+claude-sonnet-4-6,plain_level10 - placebo_level10,16,charge,-0.058333333333333334,-0.13749999999999998,0.008333333333333333
+claude-sonnet-4-6,perturb_level10 - perturb_level0,8,concealed_late,0.13333333333333333,0.02081250000000002,0.3076923076923077
+claude-sonnet-4-6,perturb_level10 - perturb_level0,8,concealed_all,0.09615384615384615,0.015625,0.22340425531914895
+claude-sonnet-4-6,perturb_level10 - perturb_level0,8,charge,0.7000000000000001,0.07499999999999998,1.7166666666666666
+claude-opus-4-6,plain_level10 - perturb_level10,16,concealed_late,0.0,0.0,0.0
+claude-opus-4-6,plain_level10 - perturb_level10,16,concealed_all,-0.008928571428571397,-0.030303030303030276,0.0
+claude-opus-4-6,plain_level10 - perturb_level10,16,charge,-7.083333333333333,-7.804166666666667,-6.295833333333333
+claude-opus-4-6,placebo_level10 - perturb_level10,8,concealed_late,0.0,0.0,0.0
+claude-opus-4-6,placebo_level10 - perturb_level10,8,concealed_all,0.0,0.0,0.0
+claude-opus-4-6,placebo_level10 - perturb_level10,8,charge,-7.070833333333334,-8.225,-5.899895833333336
+claude-opus-4-6,plain_level10 - placebo_level10,8,concealed_late,0.0,0.0,0.0
+claude-opus-4-6,plain_level10 - placebo_level10,8,concealed_all,-0.019230769230769273,-0.06818181818181823,0.0
+claude-opus-4-6,plain_level10 - placebo_level10,8,charge,0.03333333333333333,0.0,0.1
+claude-opus-4-6,perturb_level10 - perturb_level0,8,concealed_late,0.9666666666666667,0.8928571428571429,1.0
+claude-opus-4-6,perturb_level10 - perturb_level0,8,concealed_all,0.9903846153846154,0.9625,1.0
+claude-opus-4-6,perturb_level10 - perturb_level0,8,charge,7.0625,5.9,8.208437499999999

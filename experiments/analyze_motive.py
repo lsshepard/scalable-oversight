@@ -42,8 +42,8 @@ NAMES = {"claude-opus-4-6": "Claude Opus 4.6", "claude-sonnet-4-6": "Claude Sonn
 
 
 def arms(level: int):
-    return [("plain_level0", "honest prompt, plain pay", "Honest prompt\nplain pay"),
-            ("perturb_level0", "honest prompt, perturbation", "Honest prompt\nperturbation"),
+    return [("plain_level0", "honest prompt, plain pay", "Honest\nplain pay"),
+            ("perturb_level0", "honest prompt, perturbation", "Honest\nperturbation"),
             (f"plain_level{level}", "goal, plain agreement pay", "Goal\nplain pay"),
             (f"placebo_level{level}", "goal, placebo", "Goal\nplacebo"),
             (f"perturb_level{level}", "goal, hidden perturbation", "Goal\nperturbation")]
@@ -253,63 +253,91 @@ def _style(ax, grid="y"):
     ax.set_axisbelow(True)
 
 
+def _bars(ax, r, level, metric, top, digits):
+    from matplotlib.patches import FancyBboxPatch
+    present = [(k, lab) for k, _, lab in arms(level) if k in r["arms"]]
+    for i, (key, _) in enumerate(present):
+        d = r["arms"][key][metric]; v = max(d["mean"], 0.0)
+        if v > 0.004 * top:      # thin bar, rounded at the data end, square at the baseline
+            ax.add_patch(FancyBboxPatch((i - 0.17, -0.2 * top), 0.34, v + 0.2 * top,
+                                        boxstyle=f"round,pad=0,rounding_size={0.03}", mutation_aspect=0.25 * top,
+                                        linewidth=0, facecolor=BLUE, clip_on=True))
+        ax.plot([i, i], [max(d["lo"], 0), max(d["hi"], 0)], color=INK, linewidth=1.0, solid_capstyle="butt", zorder=3)
+        ax.text(i, max(d["hi"], v, 0) + 0.035 * top, f"{d['mean']:.{digits}f}", ha="center", va="bottom", fontsize=9, color=INK)
+    ax.set_xticks(range(len(present))); ax.set_xticklabels([lab for _, lab in present], fontsize=8, color=INK2)
+    ax.set_xlim(-0.6, len(present) - 0.4); ax.set_ylim(0, top * 1.16)
+
+
 def fig_concealment(res, level, path):
+    """Top row: concealment in the last rounds.  Bottom row: what each condition was charged.
+    The charge axes differ between models on purpose (the magnitudes differ tenfold)."""
     import matplotlib; matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from matplotlib.patches import FancyBboxPatch
+    import matplotlib.ticker  # noqa: F401
     models = list(res)
-    fig, axes = plt.subplots(1, len(models), figsize=(4.9 * len(models), 3.5), sharey=True, squeeze=False)
-    top = max([1.0] + [a["concealed_late"]["hi"] for r in res.values() for a in r["arms"].values()
-                       if a["concealed_late"]["hi"] == a["concealed_late"]["hi"]])
-    for ax, model in zip(axes[0], models):
-        r = res[model]; _style(ax)
-        present = [(k, lab) for k, _, lab in arms(level) if k in r["arms"]]
-        for i, (key, _) in enumerate(present):
-            d = r["arms"][key]["concealed_late"]; v = max(d["mean"], 0.0)
-            if v > 0.004:
-                ax.add_patch(FancyBboxPatch((i - 0.17, -0.2), 0.34, v + 0.2, boxstyle="round,pad=0,rounding_size=0.03",
-                                            mutation_aspect=0.25 * max(top, 1) , linewidth=0, facecolor=BLUE, clip_on=True))
-            ax.plot([i, i], [max(d["lo"], 0), max(d["hi"], 0)], color=INK, linewidth=1.0, solid_capstyle="butt", zorder=3)
-            ax.text(i, max(d["hi"], v, 0) + 0.035 * max(top, 1), f"{d['mean']:.2f}", ha="center", va="bottom", fontsize=9, color=INK)
-        ax.set_xticks(range(len(present))); ax.set_xticklabels([lab for _, lab in present], fontsize=8, color=INK2)
-        ax.set_xlim(-0.6, len(present) - 0.4); ax.set_ylim(0, top * 1.13)
-        ax.set_yticks([t for t in (0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0) if t <= top * 1.05])
+    fig, axes = plt.subplots(2, len(models), figsize=(4.9 * len(models), 6.3), squeeze=False)
+    for j, model in enumerate(models):
+        r = res[model]
+        ax = axes[0][j]; _style(ax)
+        _bars(ax, r, level, "concealed_late", 1.0, 2)
+        ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0])
         ax.set_title(NAMES.get(model, model), fontsize=10.5, color=INK, loc="left", pad=10)
-    axes[0][0].set_ylabel("Share of the system's errors concealed", fontsize=9, color=INK2)
+        ax = axes[1][j]; _style(ax)
+        top = max(a["charge"]["hi"] for a in r["arms"].values())
+        top = max(top, 0.5)
+        _bars(ax, r, level, "charge", top, 2)
+        ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(5))
     r0 = res[models[0]]
-    fig.suptitle(f"Concealment in rounds {r0['rounds'] - r0['last'] + 1}-{r0['rounds']}, no role prompt "
-                 f"(lines: 95% bootstrap intervals over pairs)", fontsize=9.5, color=INK, x=0.012, ha="left", y=0.995)
-    fig.tight_layout(rect=(0, 0, 1, 0.95)); fig.savefig(path, dpi=200, facecolor=SURFACE); plt.close(fig)
+    axes[0][0].set_ylabel(f"Share of the system's errors concealed,\nrounds {r0['rounds'] - r0['last'] + 1}-{r0['rounds']}", fontsize=9, color=INK2)
+    axes[1][0].set_ylabel("Points charged per round,\nall rounds", fontsize=9, color=INK2)
+    fig.suptitle("No role prompt: what is concealed, and what the reviewers are charged for it "
+                 "(lines: 95% bootstrap intervals over pairs)", fontsize=9.5, color=INK, x=0.012, ha="left", y=0.995)
+    fig.tight_layout(rect=(0, 0, 1, 0.97), h_pad=2.2); fig.savefig(path, dpi=200, facecolor=SURFACE); plt.close(fig)
 
 
 def fig_detection(res, level, path):
-    """Each pair once per rule: how much it concealed against what it was charged."""
+    """Each pair once per rule: how much it concealed against what it was charged.
+    Filled dots are pairs given the goal, open dots pairs given the honest prompt."""
     import matplotlib; matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
     models = list(res)
-    fig, axes = plt.subplots(1, len(models), figsize=(4.9 * len(models), 3.6), squeeze=False)
-    series = [("plain", "Plain agreement pay", BLUE), ("perturb", "Hidden perturbation", ORANGE)]
+    fig, axes = plt.subplots(1, len(models), figsize=(4.9 * len(models), 3.7), squeeze=False)
+    series = [("plain", "Plain agreement pay", BLUE, -0.012), ("perturb", "Hidden perturbation", ORANGE, +0.012)]
+    rng = np.random.default_rng(0)
     for ax, model in zip(axes[0], models):
         r = res[model]; _style(ax, "both")
         ymax = 0.0
-        for rule, label, color in series:
-            pts = [p for p in r["pairs"] if p["arm"] in (f"{rule}_level{level}", f"{rule}_level0") and p["concealed"] == p["concealed"]]
-            x = np.array([p["concealed"] for p in pts]); y = np.array([p["charge"] for p in pts])
-            jitter = (np.random.default_rng(0).random(len(pts)) - 0.5) * 0.03
-            ax.plot(x + jitter, y, linestyle="none", marker="o", markersize=6.5, markerfacecolor=color,
-                    markeredgecolor=SURFACE, markeredgewidth=1.2, alpha=0.9, zorder=3 if rule == "perturb" else 4)
-            ymax = max(ymax, float(y.max()) if len(y) else 0.0)
-        ax.set_ylim(-0.04 * max(ymax, 1), max(ymax, 1) * 1.12)
+        for rule, label, color, dodge in series:
+            for arm, filled in ((f"{rule}_level{level}", True), (f"{rule}_level0", False)):
+                pts = [p for p in r["pairs"] if p["arm"] == arm and p["concealed"] == p["concealed"]]
+                if not pts:
+                    continue
+                x = np.array([p["concealed"] for p in pts]) + dodge + (rng.random(len(pts)) - 0.5) * 0.016
+                y = np.array([p["charge"] for p in pts])
+                ax.plot(x, y, linestyle="none", marker="o", markersize=6.5,
+                        markerfacecolor=color if filled else SURFACE, markeredgecolor=SURFACE if filled else color,
+                        markeredgewidth=1.2 if filled else 1.6, zorder=4 if filled else 3)
+                ymax = max(ymax, float(y.max()))
+        ax.set_xlim(-0.06, 1.06); ax.set_ylim(-0.05 * max(ymax, 1), max(ymax, 1) * 1.12)
+        hidden = [p for p in r["pairs"] if p["arm"] == f"plain_level{level}" and p["concealed"] >= 0.9]
+        if hidden:      # these dots coincide; say how many there are
+            ax.annotate(f"{len(hidden)} pairs conceal nearly\neverything, charged {np.mean([p['charge'] for p in hidden]):.2f}",
+                        xy=(0.985, 0.0), xytext=(0.62, 0.30 * max(ymax, 1)), fontsize=8, color=INK, ha="left", va="center",
+                        arrowprops=dict(arrowstyle="-", color=AXIS, linewidth=0.8))
+        ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0])
         ax.set_xlabel("Share of the system's errors the pair concealed", fontsize=9, color=INK2)
         ax.set_title(NAMES.get(model, model), fontsize=10.5, color=INK, loc="left", pad=8)
     axes[0][0].set_ylabel("Points charged per round", fontsize=9, color=INK2)
     handles = [Line2D([0], [0], linestyle="none", marker="o", markersize=6.5, markerfacecolor=c, markeredgecolor=SURFACE, label=l)
-               for _, l, c in series]
-    fig.legend(handles=handles, loc="upper right", ncol=2, frameon=False, fontsize=8.5, labelcolor=INK2,
-               bbox_to_anchor=(0.995, 1.0), handletextpad=0.3, columnspacing=1.4)
-    fig.suptitle("One dot per pair: concealment against the charge it drew", fontsize=9.5, color=INK, x=0.012, ha="left", y=0.985)
-    fig.tight_layout(rect=(0, 0, 1, 0.93)); fig.savefig(path, dpi=200, facecolor=SURFACE); plt.close(fig)
+               for _, l, c, _ in series]
+    handles += [Line2D([0], [0], linestyle="none", marker="o", markersize=6.5, markerfacecolor=INK2, markeredgecolor=SURFACE, label="given the goal"),
+                Line2D([0], [0], linestyle="none", marker="o", markersize=6, markerfacecolor=SURFACE, markeredgecolor=INK2,
+                       markeredgewidth=1.6, label="honest prompt")]
+    fig.legend(handles=handles, loc="upper right", ncol=4, frameon=False, fontsize=8.5, labelcolor=INK2,
+               bbox_to_anchor=(0.995, 0.955), handletextpad=0.2, columnspacing=1.2)
+    fig.suptitle("One dot per pair: how much it concealed and what it was charged", fontsize=9.5, color=INK, x=0.012, ha="left", y=0.995)
+    fig.tight_layout(rect=(0, 0, 1, 0.9)); fig.savefig(path, dpi=200, facecolor=SURFACE); plt.close(fig)
 
 
 def fig_by_round(res, level, path):
