@@ -901,3 +901,62 @@ paid runs without his word. No RunPod key was added and no GPU was used.
    `docs/experiment2_design.md` section 9); (d) RL on an open-weight model with a rented GPU.
 4. Still unknown: the paper deadline, Lily Lavitas's answer on "theory first", the outcome of
    the 2026-11-06 meeting, and whether the code should also go on `main`.
+
+### 13.15 Trained supervisors (started 2026-11-27 evening; Liam's deadline is 24 hours away)
+
+Liam asked how sharp the LLM experiments are (answer: moderately; see `REPORT_LLM.md` 8) and
+then for an RL experiment within 24 hours, on a rented GPU ("think in AI time"). He set no
+new API budget; the Claude API spend stands at $84.44 of the $80 target and **no further
+paid Claude API run may start without his word** (open offer: Opus 5 with recognizable
+insertions, $5 to $10, not yet answered). GPU budget: $40 on RunPod, of which about $25 is
+expected to be needed.
+
+**Design (Claude's proposal, told to Liam, not objected to).** `hpo/trained.py`,
+`experiments/exp9_trained.py`. A supervisor is a report head on a language model's
+activations: the model reads the rendered ledger once, the hidden state at the end of every
+line (three layers) plus the model's own log-probability of the stated result are the line's
+features, and a small permutation-invariant head turns them into a real-valued report. Two
+supervisors with separate heads are trained at the same time, each on its own realised cost
+(`hpo/mechanism.py`: adjusted agreement, planted floor, linear stake b per concealed error,
+reporting charge eps = 0.02), with the other's report taken as given. Nothing is stated to
+them. Estimators: `analytic` (gradient of the realised cost in the own report) and
+`reinforce` (noisy report, only the payment observed). Perturbations are those of every run
+so far: Poisson(1.5) insertions per copy from the same error generator; a share p of them can
+carry a tell (doubled space after "="); the ledger number can mark dirty originals.
+
+**Predictions** come from the existing exact solver (`hpo/equilibrium.py`) for a supervisor
+that perceives its view perfectly. Concealed share at stake 0.5: plain agreement 1.000;
+agreement only unbounded; floor only 0.294; both terms 0.202; both terms with 50 / 90 / 100%
+recognizable insertions 0.258 / 0.645 / 1.000; surviving signal 0.874; stake 0.1 / 0.25 / 1.0
+under both terms 0.053 / 0.109 / 0.388; no stake: both terms 0.015, plain or recognizable
+1.000.
+
+**Checked so far.** With synthetic features (perfect perception) the trained pairs reach the
+exact equilibrium in all five main conditions (`python experiments/exp9_trained.py synth`,
+`tests/test_trained.py`). The `reinforce` estimator drifted to harmless over-reporting on
+clean ledgers when eps was 0; eps = 0.02 was added for that reason and the check must be
+repeated. A CPU pilot with Qwen2.5-0.5B (frozen) is extracting features into
+`results/trained/pilot_qwen05_cpu/`; first sign: the model's own log-probability separates
+wrong from correct lines on the few ledgers looked at.
+
+**GPU.** `experiments/runpod_driver.py` (start pod, run jobs, fetch files, terminate) and
+`experiments/pod_server.py` (job server on the pod). The RunPod GraphQL API and the pod proxy
+answer from this container; `rest.runpod.io` is blocked. The key must be in the environment
+variable `RUNPOD_API_KEY` (never in chat); it was not present when this was written, and a
+new session may be needed to pick it up. Not yet tested end to end. Plan on the pod:
+
+    python experiments/runpod_driver.py up            # then: wait
+    python experiments/runpod_driver.py run extract "python experiments/exp9_trained.py extract \
+        --model Qwen/Qwen2.5-1.5B-Instruct --conds hidden plain rec050 rec090 rec100 marker \
+        --n-train 8000 --n-test 2000 --batch 64 --out results/trained/qwen15"
+    python experiments/runpod_driver.py run train "python experiments/exp9_trained.py train \
+        --feats results/trained/qwen15 --plans main nostake recog stake marker --seeds 3 \
+        --estimators analytic reinforce"
+    python experiments/runpod_driver.py get results/trained/qwen15/train_main_nostake_recog_stake_marker.json <local>
+    python experiments/runpod_driver.py down          # ALWAYS terminate; `pods` lists what is running
+
+**Still to build.** Supervised ceiling (head trained on true counts, `TrainConfig.supervised`),
+analysis and figures, one or two runs that train the whole model through an adapter on the
+payments, the write-up in `REPORT_LLM.md`. Main risk: the frozen small model does not see
+arithmetic errors crisply enough; remedies are a larger model (Qwen3-4B is ungated) or the
+adapter runs.
