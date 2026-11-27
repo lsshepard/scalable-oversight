@@ -127,7 +127,11 @@ def run_plan(plan, get_data, tc_kwargs, seeds, device, log=print):
         sup = kind == "supervised"
         rw = Reward(name="supervised") if sup else reward(kind, b, eps)
         ex = dict(bounded=False) if sup else exact_prediction(ledger_cfg(cond), rw, plain=cond == "plain")
-        (train, ftrain), (test, ftest) = get_data(cond, "train"), get_data(cond, "test")
+        try:
+            (train, ftrain), (test, ftest) = get_data(cond, "train"), get_data(cond, "test")
+        except FileNotFoundError:
+            log(f"== {label}: no features for '{cond}', skipped")
+            continue
         for est, seed in [(e, s) for e in tc_kwargs.get("estimators", ["analytic"]) for s in seeds]:
             if sup and est != tc_kwargs.get("estimators", ["analytic"])[0]:
                 continue

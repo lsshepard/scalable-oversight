@@ -35,7 +35,7 @@ def load(paths):
     for (label, est), rs in groups.items():
         g = dict(label=label, estimator=est, cond=rs[0]["cond"], kind=rs[0]["kind"], b=rs[0]["b"], eps=rs[0]["eps"],
                  seeds=len(rs), exact=rs[0]["exact"], traces=[r["trace"] for r in rs],
-                 gap=float(np.nanmean([r["shading_rms_gap"] for r in rs])))
+                 gap=float(np.mean([x for x in (r["shading_rms_gap"] for r in rs) if x == x] or [float("nan")])))
         for m in METRICS:
             v = np.array([r["final"][m] for r in rs], float)
             g[m] = dict(mean=float(np.nanmean(v)), lo=float(np.nanmin(v)), hi=float(np.nanmax(v)))
@@ -83,37 +83,47 @@ def _save(fig, path):
 
 
 def fig_main(groups, path, estimator):
+    """Left: no stake (a reporting charge of 0.02 is the only reason to report less).
+    Right: stake 0.5.  Shares above 1 (reports below zero) are drawn at 1; the table has them."""
     import matplotlib; matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
-    order = ["plain agreement", "agreement only", "floor only", "both terms", "both terms, insertions recognizable"]
-    short = ["Plain\nagreement", "Agreement\nonly", "Floor\nonly", "Both terms\n(the mechanism)", "Both terms,\ninsertions\nrecognizable"]
+    panels = [("No private gain from concealment",
+               ["plain agreement, no stake", "both terms, no stake", "both terms, no stake, insertions recognizable"],
+               ["Plain\nagreement", "Both terms\n(the mechanism)", "Both terms,\ninsertions\nrecognizable"]),
+              ("Private gain of 0.5 per concealed error",
+               ["plain agreement", "agreement only", "floor only", "both terms", "both terms, insertions recognizable"],
+               ["Plain\nagreement", "Agreement\nonly", "Floor\nonly", "Both terms\n(the mechanism)",
+                "Both terms,\ninsertions\nrecognizable"])]
     gs = {g["label"]: g for g in groups if g["estimator"] == estimator}
-    present = [(l, s) for l, s in zip(order, short) if l in gs]
-    if not present:
+    panels = [(t, [(l, s) for l, s in zip(ls, ss) if l in gs]) for t, ls, ss in panels]
+    panels = [(t, pr) for t, pr in panels if pr]
+    if not panels:
         return
-    fig, ax = plt.subplots(figsize=(1.55 * len(present) + 1.2, 3.6)); _style(ax)
-    for i, (label, _) in enumerate(present):
-        g = gs[label]; d = g["net_share"]
-        clip = lambda v: float(np.clip(v, 0.0, 1.3))
-        d = dict(mean=clip(d["mean"]), lo=clip(d["lo"]), hi=clip(d["hi"]), raw=d["mean"])
-        ax.bar(i, d["mean"], width=0.36, color=BLUE, linewidth=0, zorder=2)
-        if d["hi"] - d["lo"] > 5e-4:
-            ax.plot([i, i], [d["lo"], d["hi"]], color=INK, linewidth=1.0, zorder=3)
-        ax.text(i, max(d["hi"], d["mean"]) + 0.035, f"{d['raw']:.2f}" if d["raw"] <= 1.3 else "> 1.3\n(still falling)",
-                ha="center", va="bottom", fontsize=9, color=INK)
-        if g["exact"].get("bounded"):
-            ax.plot([i - 0.27, i + 0.27], [g["exact"]["net_share"]] * 2, color=ORANGE, linewidth=2.2, zorder=4,
-                    solid_capstyle="round")
-        else:
-            ax.text(i, 0.6, "exact:\nno bound", ha="center", va="center", fontsize=8, color=SURFACE, zorder=5)
-    ax.set_xticks(range(len(present))); ax.set_xticklabels([s for _, s in present], fontsize=8, color=INK2)
-    ax.set_ylim(0, 1.52); ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0, 1.25]); ax.set_xlim(-0.6, len(present) - 0.4)
-    ax.set_ylabel("System errors withheld,\nas a share of those present", fontsize=9, color=INK2)
-    ax.legend(handles=[Line2D([0], [0], color=BLUE, linewidth=6, label="trained pair"),
-                       Line2D([0], [0], color=ORANGE, linewidth=2.2, label="exact equilibrium")],
-              loc="upper center", bbox_to_anchor=(0.5, 1.14), ncol=2, frameon=False, fontsize=8.5, labelcolor=INK2)
-    fig.tight_layout(); _save(fig, path)
+    fig, axes = plt.subplots(1, len(panels), figsize=(sum(1.45 * len(pr) + 0.9 for _, pr in panels), 3.9), squeeze=False,
+                             gridspec_kw=dict(width_ratios=[len(pr) + 0.6 for _, pr in panels]))
+    clip = lambda v: float(np.clip(v, 0.0, 1.0))
+    for ax, (title, present) in zip(axes[0], panels):
+        _style(ax)
+        for i, (label, _) in enumerate(present):
+            g = gs[label]; d = g["net_share"]
+            unbounded = not g["exact"].get("bounded")
+            ax.bar(i, clip(d["mean"]), width=0.36, color=BLUE, linewidth=0, zorder=2)
+            if d["hi"] - d["lo"] > 5e-4 and not unbounded:
+                ax.plot([i, i], [clip(d["lo"]), clip(d["hi"])], color=INK, linewidth=1.0, zorder=3)
+            txt = "no limit" if unbounded else (f"{d['mean']:.2f}" if d["mean"] <= 1 else "1.00")
+            ax.text(i, clip(max(d["hi"], d["mean"])) + 0.035, txt, ha="center", va="bottom", fontsize=9, color=INK)
+            if not unbounded:
+                ax.plot([i - 0.27, i + 0.27], [clip(g["exact"]["net_share"])] * 2, color=ORANGE, linewidth=2.2, zorder=4,
+                        solid_capstyle="round")
+        ax.set_xticks(range(len(present))); ax.set_xticklabels([s for _, s in present], fontsize=8, color=INK2)
+        ax.set_ylim(0, 1.14); ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0]); ax.set_xlim(-0.6, len(present) - 0.4)
+        ax.set_title(title, fontsize=9.5, color=INK, loc="left", pad=8)
+    axes[0][0].set_ylabel("Share of the system's errors\nwithheld from the report", fontsize=9, color=INK2)
+    fig.legend(handles=[Line2D([0], [0], color=BLUE, linewidth=6, label="trained pair"),
+                        Line2D([0], [0], color=ORANGE, linewidth=2.2, label="exact equilibrium, perfect perception")],
+               loc="upper right", bbox_to_anchor=(0.995, 1.0), ncol=2, frameon=False, fontsize=8.5, labelcolor=INK2)
+    fig.tight_layout(rect=(0, 0, 1, 0.93)); _save(fig, path)
 
 
 def fig_dials(groups, path, estimator):
@@ -145,33 +155,40 @@ def fig_dials(groups, path, estimator):
 
 
 def fig_weights(groups, path, estimator):
+    """What one line of each kind adds to the trained report (least-squares weights)."""
     import matplotlib; matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
-    want = ["plain agreement, no stake", "both terms, no stake", "both terms, no stake, insertions recognizable",
-            "plain agreement", "both terms", "both terms, insertions recognizable"]
-    short = ["Plain\nagreement", "Both terms", "Both terms,\nrecognizable", "Plain\nagreement", "Both terms", "Both terms,\nrecognizable"]
+    panels = [("No private gain from concealment",
+               ["plain agreement, no stake", "both terms, no stake", "both terms, no stake, insertions recognizable"]),
+              ("Private gain of 0.5 per concealed error",
+               ["plain agreement", "both terms", "both terms, insertions recognizable"])]
+    short = ["Plain\nagreement", "Both terms\n(the mechanism)", "Both terms,\ninsertions\nrecognizable"]
     gs = {g["label"]: g for g in groups if g["estimator"] == estimator}
-    present = [(l, s) for l, s in zip(want, short) if l in gs]
-    if not present:
+    panels = [(t, [(l, s) for l, s in zip(ls, short) if l in gs]) for t, ls in panels]
+    panels = [(t, pr) for t, pr in panels if pr]
+    if not panels:
         return
-    fig, ax = plt.subplots(figsize=(1.5 * len(present) + 1.4, 3.6)); _style(ax)
-    for i, (label, _) in enumerate(present):
-        g = gs[label]
-        ins = g["w_inserted_tell"] if g["cond"].startswith("rec") and g["w_inserted_tell"]["mean"] == g["w_inserted_tell"]["mean"] \
-            else g["w_inserted_plain"]
-        for dx, d, color in ((-0.17, g["w_system"], BLUE), (0.17, ins, ORANGE)):
-            if d["mean"] != d["mean"]:
-                continue
-            ax.bar(i + dx, d["mean"], width=0.3, color=color, linewidth=0, zorder=2)
-            ax.text(i + dx, max(d["mean"], 0) + 0.03, f"{d['mean']:.2f}", ha="center", va="bottom", fontsize=8.5, color=INK)
-    ax.axhline(0, color=AXIS, linewidth=0.8)
-    ax.set_xticks(range(len(present))); ax.set_xticklabels([s for _, s in present], fontsize=8, color=INK2)
-    ax.set_ylabel("Added to the report by one such line", fontsize=9, color=INK2); ax.set_ylim(-0.35, 1.25)
-    ax.legend(handles=[Line2D([0], [0], color=BLUE, linewidth=6, label="an error of the audited system"),
-                       Line2D([0], [0], color=ORANGE, linewidth=6, label="an inserted error")],
-              loc="upper center", bbox_to_anchor=(0.5, 1.16), ncol=2, frameon=False, fontsize=8.5, labelcolor=INK2)
-    fig.tight_layout(); _save(fig, path)
+    fig, axes = plt.subplots(1, len(panels), figsize=(4.6 * len(panels), 3.9), squeeze=False, sharey=True)
+    for ax, (title, present) in zip(axes[0], panels):
+        _style(ax)
+        for i, (label, _) in enumerate(present):
+            g = gs[label]
+            tell = g["cond"].startswith("rec") and g["w_inserted_tell"]["mean"] == g["w_inserted_tell"]["mean"]
+            ins = g["w_inserted_tell"] if tell else g["w_inserted_plain"]
+            for dx, d, color in ((-0.17, g["w_system"], BLUE), (0.17, ins, ORANGE)):
+                if d["mean"] != d["mean"]:
+                    continue
+                ax.bar(i + dx, d["mean"], width=0.3, color=color, linewidth=0, zorder=2)
+                ax.text(i + dx, max(d["mean"], 0) + 0.03, f"{d['mean']:.2f}", ha="center", va="bottom", fontsize=8.5, color=INK)
+        ax.axhline(0, color=AXIS, linewidth=0.8)
+        ax.set_xticks(range(len(present))); ax.set_xticklabels([s for _, s in present], fontsize=8, color=INK2)
+        ax.set_ylim(-0.35, 1.22); ax.set_title(title, fontsize=9.5, color=INK, loc="left", pad=8)
+    axes[0][0].set_ylabel("Added to the report by one such line", fontsize=9, color=INK2)
+    fig.legend(handles=[Line2D([0], [0], color=BLUE, linewidth=6, label="an error of the audited system"),
+                        Line2D([0], [0], color=ORANGE, linewidth=6, label="an inserted error")],
+               loc="upper right", bbox_to_anchor=(0.995, 1.0), ncol=2, frameon=False, fontsize=8.5, labelcolor=INK2)
+    fig.tight_layout(rect=(0, 0, 1, 0.93)); _save(fig, path)
 
 
 if __name__ == "__main__":

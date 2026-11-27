@@ -984,9 +984,8 @@ the token in the state file). Plan on the pod:
     python experiments/runpod_driver.py down          # ALWAYS terminate; `pods` lists what is running, `balance` the credit
     python experiments/analyze_trained.py results/trained/main/train_*.json --out results/trained/main/analysis
 
-(The `train` step with `ceiling` in the plan list skips ceiling conditions whose features are
-missing only if those files exist; with `pick_*` folders only `hidden` exists, so use
-`--plans nostake` plus a ceiling restricted to hidden there if it errors.)
+(Plan rows whose features are missing are skipped, so `ceiling nostake` works on a folder
+that holds only `hidden`.)
 
 **Still to build.** Supervised ceiling (head trained on true counts, `TrainConfig.supervised`),
 analysis and figures, one or two runs that train the whole model through an adapter on the
