@@ -987,6 +987,24 @@ the token in the state file). Plan on the pod:
 (Plan rows whose features are missing are skipped, so `ceiling nostake` works on a folder
 that holds only `hidden`.)
 
+**For the session that has the key (written 21:35).** The session that wrote this could not
+see `RUNPOD_API_KEY` (added by Liam after it started) and may not start helper sessions. Liam
+asked to "test that it works for your purposes". Do this first, in order, and stop with
+`down` plus a report to Liam if a step fails:
+
+    python experiments/runpod_driver.py balance       # key valid, GraphQL read access, credit present
+    python experiments/runpod_driver.py up            # GraphQL write access; a GPU is available
+    python experiments/runpod_driver.py wait          # the pod ran the start script; the proxy reaches the job server
+    python experiments/runpod_driver.py run hello "nvidia-smi | head -15; python -c 'import torch; print(torch.cuda.is_available())'"
+    python experiments/runpod_driver.py log hello
+
+Then follow the plan above. The key Liam created is restricted to the GraphQL API with read
+and write access, which is all the driver uses. The older session may still be running: it
+works only on CPU (features into `results/trained/qwen05_cpu/`, the perfect-perception runs
+into `results/trained/perfect_perception/`) and commits to the same branch. So fetch and
+merge before every push, write GPU results under `results/trained/main/`, and add a new
+section 13.16 to this file instead of editing 13.15.
+
 **Still to build.** Supervised ceiling (head trained on true counts, `TrainConfig.supervised`),
 analysis and figures, one or two runs that train the whole model through an adapter on the
 payments, the write-up in `REPORT_LLM.md`. Main risk: the frozen small model does not see
