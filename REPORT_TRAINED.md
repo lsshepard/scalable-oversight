@@ -1,8 +1,7 @@
 # Supervisors trained on their payments: results
 
-Status 2026-11-27, late evening. Written by Claude. Work in progress: section 4 is complete
-for hidden insertions only; recognizable insertions and plain agreement on the language
-model's features are still running. Choices that Liam has not confirmed are in section 7.
+Status 2026-11-27, midnight. Written by Claude. Work in progress: plain agreement on the
+language model's features is still running. Choices that Liam has not confirmed are in section 7.
 The experiments with prompted language models are in `REPORT_LLM.md`.
 
 ## 1. Summary
@@ -39,8 +38,10 @@ activations on the ledger text; hidden insertions; 1,500 training ledgers; three
 | Both terms, no private gain | -0.40 [-0.47, -0.36] (over-reports) | 0.015 |
 
 Trained with no label, a supervisor adds 0.97 to its report for each error of the audited
-system and 0.94 for each inserted error. Recognizable insertions and plain agreement on these
-features: pending.
+system and 0.94 for each inserted error. When every inserted error carries a tell, the share
+withheld at a private gain of 0.5 rises from 0.19 to between 0.49 and 0.90, depending on how
+much of the tell the supervisor's features expose (79% to 99.8%), close to the exact curve
+(section 4.2). Plain agreement on these features: pending.
 
 **What is weak.** With perfect perception this is close to the simulation in `REPORT.md`.
 The language-model version uses a small frozen model on CPU; its perception is noisy (count
@@ -169,9 +170,46 @@ a count error (RMSE) of 0.45 and is charged 0.35 per round by the mechanism.
   at no gain to 0.45 at a gain of 1.0, against 0.015 to 0.39. The two curves cross near 0.5.
 - **The two failure modes of single terms appear as predicted.**
 
-### 4.2 Recognizable insertions and plain agreement
+### 4.2 Recognizable insertions
 
-Pending (features are being extracted).
+Same mechanism and payments; every inserted error carries the tell (a doubled space after
+"="). The supervisor is told nothing about it. Standard supervisor (8 directions per layer),
+three seeds:
+
+| Condition | Estimator | Share withheld: trained | Exact, perfect perception | Weight of a system error | Weight of an inserted error | Charge per round |
+|---|---|---|---|---|---|---|
+| Trained on true counts (ceiling) | | 0.12 [0.11, 0.13] | | 0.81 | 0.96 | 0.20 |
+| Both terms, no private gain | analytic | -0.08 [-0.12, -0.03] | 1.008 | 0.74 | 0.96 | 0.20 |
+| | reinforce | -0.10 [-0.19, 0.03] | 1.008 | 0.75 | 0.95 | 0.19 |
+| Both terms, private gain 0.5 | analytic | 0.48 [0.43, 0.54] | 1.208 | 0.61 | 0.91 | 0.30 |
+| | reinforce | 0.51 [0.47, 0.56] | 1.208 | 0.61 | 0.90 | 0.30 |
+
+Against hidden insertions with the same private gain (0.19 withheld, weights 0.89 and 0.85)
+the supervisors withhold two and a half times as much and weight a system error well below
+an inserted one. They stay far from the prediction for fully recognizable insertions.
+
+**The gap is explained by how much of the tell the supervisor can read.** The supervisor
+sees only a few directions of the model's activations. A linear probe on those directions
+measures what share of the tells they expose. Varying the number of directions (two seeds
+each, private gain 0.5):
+
+| Directions per layer | Tells exposed (false alarms) | Share withheld: trained | Exact equilibrium when that share of insertions is recognizable | Weight of a system error | of an inserted error |
+|---|---|---|---|---|---|
+| 2 | 79% (2.2%) | 0.49 (0.56, 0.43) | 0.43 at 80% | 0.61 | 0.90 |
+| 8 | 83% (1.5%) | 0.51 (0.54, 0.48) | 0.55 at 86% | 0.60 | 0.92 |
+| 24 | 93% (0.8%) | 0.61 (0.61, 0.60) | 0.66 at 90%, 0.97 at 95% | 0.50 | 0.90 |
+| 48 | 99.8% (0.0%) | 0.90 (0.91, 0.89) | 1.10 at 97%, 1.21 at 100% | 0.17 | 0.94 |
+
+With no private gain the exact prediction stays below 0.09 up to 97% recognizable and jumps
+to 1.0 at 100%. The trained pairs give -0.09, -0.10 and -0.09 for 2, 8 and 24 directions and
+0.37 (0.44, 0.30) for 48.
+
+So the more of the tell a supervisor can read, the more of the system's errors it leaves out,
+along the curve the theory gives, and with nearly full access it leaves out most of them even
+when it gains nothing from concealment beyond a negligible reporting charge. All numbers are
+on fresh ledgers, so memory of the training copies (4.3) cannot produce them.
+
+Plain agreement on these features: pending.
 
 ### 4.3 A finding from the first attempt: reused copies stop being hidden
 
