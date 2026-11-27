@@ -343,7 +343,7 @@ if __name__ == "__main__":
     ee.add_argument("--rank", type=int, default=8); ee.add_argument("--lr-adapter", type=float, default=2e-4)
     ee.add_argument("--eval-every", type=int, default=150)
     ee.add_argument("--device", default=""); ee.add_argument("--out", required=True)
-    for q in (e, sy, tr, ee):
+    for q in (e, sy, tr, ee, pr):
         q.add_argument("--threads", type=int, default=0, help="CPU threads for torch (0 = default)")
     args = ap.parse_args()
     if args.threads:
