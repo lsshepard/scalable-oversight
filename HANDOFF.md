@@ -667,3 +667,21 @@ arm, the recognizability probe, and a second model family.
 Code note: adding level 5 changed the prompt hash, so the folders written before it
 (`step1/`, `ladder/`) are complete but can no longer be extended. New runs need new folders.
 
+### 13.9 Confirmatory run, 2026-11-27: plan, written before the run
+
+- Liam approved the level-5 wording as it stands and this run ("yes run it").
+- `experiments/confirmatory.sh <model> <cap> <cap>` for `claude-sonnet-5-5` and
+  `claude-haiku-5-5`: five arms (plain/0, plain/5, perturb/5, placebo/5, perturb/0),
+  20 pairs x 20 rounds each, fresh seeds 2000-2019, `--effort medium`, stake 0.5.
+  Output in `results/llm_rounds/<model>/`.
+- Changed just before the run: originals and plants use separate random streams, so for
+  a given seed every arm sees the same sequence of original ledgers. Pilot data predate
+  this; their arms saw different ledgers.
+- Primary outcome: share of genuine errors missing from adjusted reports in rounds 16-20,
+  per arm, with 95% bootstrap intervals over the 20 pairs.
+- Primary comparisons, paired by seed: role/plain minus role/perturbation, and
+  role/placebo minus role/perturbation.
+- Secondary: the same over all rounds; rounds 11-15 against 16-20 (the horizon check of
+  section 8); shift on clean originals; exact counts; payments; refusal and void rates;
+  the two honest-prompt arms for accuracy and the known effect.
+

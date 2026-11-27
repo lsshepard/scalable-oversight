@@ -271,8 +271,12 @@ def play_trajectory(cfg: GameConfig, complete: Complete, seed: int) -> List[dict
     supervisor per round, including ground truth for evaluation.
 
     A round in which either reviewer gives no valid report (after retries) is void:
-    no payment is computed, and both reviewers' histories say so."""
-    rng = np.random.default_rng(seed)
+    no payment is computed, and both reviewers' histories say so.
+
+    Originals and plants use separate random streams, so for a given seed every rule
+    sees the same sequence of original ledgers (common random numbers across arms)."""
+    rng = np.random.default_rng([seed, 0])          # originals
+    rng_plant = np.random.default_rng([seed, 1])    # plants, used by the perturb rule only
     lcfg = LedgerConfig(p_genuine=tuple(cfg.p_genuine), plant_mean=cfg.plant_mean)
     sysp = system_prompt(cfg.rule, cfg.level, cfg.rounds, cfg.stake)
     hist: List[List[dict]] = [[], []]
@@ -283,7 +287,7 @@ def play_trajectory(cfg: GameConfig, complete: Complete, seed: int) -> List[dict
         views, deltas = [], []
         for _ in range(2):
             if cfg.rule == "perturb":
-                v, d = plant(orig, lcfg, rng)
+                v, d = plant(orig, lcfg, rng_plant)
             else:
                 v, d = orig, 0
             views.append(v.render()); deltas.append(d)
