@@ -105,6 +105,8 @@ PLANS = {
               for p in (0, 50, 90, 100)],
     "stake": [(f"both terms, stake {b:g}", "hidden", "mechanism", b, EPS) for b in (0.1, 0.25, 0.5, 1.0)],
     "marker": [("both terms, surviving signal", "marker", "mechanism", 0.5, EPS)],
+    # perception ceiling: the same head trained on the true count of wrong lines (uses labels)
+    "ceiling": [(f"trained on true counts ({c})", c, "supervised", 0.0, 0.0) for c in ("hidden", "rec100", "plain")],
 }
 
 
@@ -122,11 +124,15 @@ def run_plan(plan, get_data, tc_kwargs, seeds, device, log=print):
     from hpo.trained import TrainConfig, exact_prediction, train_pair
     rows = []
     for label, cond, kind, b, eps in plan:
-        rw = reward(kind, b, eps)
-        ex = exact_prediction(ledger_cfg(cond), rw, plain=cond == "plain")
+        sup = kind == "supervised"
+        rw = Reward(name="supervised") if sup else reward(kind, b, eps)
+        ex = dict(bounded=False) if sup else exact_prediction(ledger_cfg(cond), rw, plain=cond == "plain")
         (train, ftrain), (test, ftest) = get_data(cond, "train"), get_data(cond, "test")
         for est, seed in [(e, s) for e in tc_kwargs.get("estimators", ["analytic"]) for s in seeds]:
-            tc = TrainConfig(seed=seed, estimator=est, **{k: v for k, v in tc_kwargs.items() if k != "estimators"})
+            if sup and est != tc_kwargs.get("estimators", ["analytic"])[0]:
+                continue
+            tc = TrainConfig(seed=seed, estimator=est, supervised=sup,
+                             **{k: v for k, v in tc_kwargs.items() if k != "estimators"})
             t0 = time.time()
             log(f"== {label} | views: {cond} | {kind} b={b:g} eps={eps:g} | {est} seed {seed}")
             res = train_pair(train, test, ftrain, ftest, rw, tc, device, log=log)
@@ -140,7 +146,7 @@ def run_plan(plan, get_data, tc_kwargs, seeds, device, log=print):
             if ex.get("bounded"):
                 log(f"   exact: concealed/dirty {ex['concealed_dirty']:+.3f}  share {ex['concealed_share']:.3f}  "
                     f"clean {ex['under_clean']:+.3f}  charge {ex['charge']:.3f}   | rms gap of shading {dist:.3f}")
-            else:
+            elif not sup:
                 log("   exact: unbounded (reports fall without limit)")
     return rows
 
@@ -180,6 +186,43 @@ def cmd_train(args):
     print(f"written {out}")
 
 
+def cmd_e2e(args):
+    """Train the language model itself (adapter + head) on the payments."""
+    import torch
+    from hpo.trained import exact_prediction, sample_views
+    from hpo.trained_e2e import E2EConfig, train_e2e
+    device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
+    out = pathlib.Path(args.out); out.parent.mkdir(parents=True, exist_ok=True)
+    rows = json.loads(out.read_text()) if out.exists() else []
+    done = {(r["label"], r["seed"]) for r in rows}
+    plan = [r for name in args.plans for r in PLANS[name] if not args.only or any(o == r[0] for o in args.only)]
+    for label, cond, kind, b, eps in plan:
+        sup = kind == "supervised"
+        rw = Reward(name="supervised") if sup else reward(kind, b, eps)
+        ex = dict(bounded=False) if sup else exact_prediction(ledger_cfg(cond), rw, plain=cond == "plain")
+        train = sample_views(ledger_cfg(cond), args.n_train, args.seed, plain=cond == "plain")
+        test = sample_views(ledger_cfg(cond), args.n_test, args.seed + 1, plain=cond == "plain")
+        for seed in range(args.seeds):
+            if (label, seed) in done:
+                continue
+            print(f"== {label} | views: {cond} | {kind} b={b:g} eps={eps:g} | end to end, seed {seed}", flush=True)
+            t0 = time.time()
+            cfg = E2EConfig(steps=args.steps, batch=args.batch, seed=seed, rank=args.rank, supervised=sup,
+                            lr_adapter=args.lr_adapter, eval_every=args.eval_every, n_eval=args.n_test)
+            res = train_e2e(args.model, train, test, rw, cfg, device, log=lambda m: print(m, flush=True))
+            fin = res["final"]
+            rows.append(dict(label=label, cond=cond, kind=kind, b=b, eps=eps, estimator="end to end", seed=seed,
+                             model=args.model, seconds=time.time() - t0, exact=ex,
+                             final={k: v for k, v in fin.items() if k != "shading"}, shading=fin["shading"],
+                             shading_rms_gap=shading_distance(fin["shading"], ex["shading"]) if ex.get("bounded") else float("nan"),
+                             trace=[{k: v for k, v in t.items() if k != "shading"} for t in res["trace"]]))
+            out.write_text(json.dumps(rows))
+            if ex.get("bounded"):
+                print(f"   exact: concealed/dirty {ex['concealed_dirty']:+.3f}  share {ex['concealed_share']:.3f}  "
+                      f"clean {ex['under_clean']:+.3f}  charge {ex['charge']:.3f}", flush=True)
+    print(f"written {out}")
+
+
 def _train_args(p):
     p.add_argument("--plans", nargs="+", default=["main"], choices=list(PLANS))
     p.add_argument("--steps", type=int, default=4000); p.add_argument("--seeds", type=int, default=1)
@@ -204,10 +247,19 @@ if __name__ == "__main__":
     e.add_argument("--layers", type=int, nargs="*"); e.add_argument("--batch", type=int, default=8)
     e.add_argument("--device", default=""); e.add_argument("--seed", type=int, default=0)
     e.add_argument("--out", required=True)
-    for q in (e, sy, tr):
+    ee = sub.add_parser("e2e")
+    ee.add_argument("--model", required=True); ee.add_argument("--plans", nargs="+", default=["main"], choices=list(PLANS))
+    ee.add_argument("--only", nargs="*", default=[], help="labels of the plan rows to run")
+    ee.add_argument("--n-train", type=int, default=4000); ee.add_argument("--n-test", type=int, default=400)
+    ee.add_argument("--steps", type=int, default=1500); ee.add_argument("--batch", type=int, default=16)
+    ee.add_argument("--seeds", type=int, default=1); ee.add_argument("--seed", type=int, default=0)
+    ee.add_argument("--rank", type=int, default=8); ee.add_argument("--lr-adapter", type=float, default=2e-4)
+    ee.add_argument("--eval-every", type=int, default=150)
+    ee.add_argument("--device", default=""); ee.add_argument("--out", required=True)
+    for q in (e, sy, tr, ee):
         q.add_argument("--threads", type=int, default=0, help="CPU threads for torch (0 = default)")
     args = ap.parse_args()
     if args.threads:
         import torch
         torch.set_num_threads(args.threads)
-    dict(extract=cmd_extract, synth=cmd_synth, train=cmd_train)[args.cmd](args)
+    dict(extract=cmd_extract, synth=cmd_synth, train=cmd_train, e2e=cmd_e2e)[args.cmd](args)

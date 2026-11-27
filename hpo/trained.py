@@ -204,19 +204,16 @@ def _prep(data: dict, X: np.ndarray, H: np.ndarray, device: str, stats=None):
     if stats is None:
         flat = Xt[mask]
         stats = (flat.mean(0), flat.std(0).clamp_min(1e-3), Ht.mean((0, 1)), Ht.std((0, 1)).clamp_min(1e-3))
-    Xt = ((Xt - stats[0]) / stats[1]) * mask.unsqueeze(-1)
+    Xt.sub_(stats[0]).div_(stats[1]).mul_(mask.unsqueeze(-1))
     Ht = (Ht - stats[2]) / stats[3]
     t = {k: torch.as_tensor(data[k], dtype=torch.float32, device=device) for k in ("T", "D", "K", "R", "M")}
     return dict(X=Xt, H=Ht, mask=mask.float(), **t), stats
 
 
-@torch.no_grad()
-def evaluate(heads, ds: dict, data: dict, rw: Reward) -> dict:
-    """Behaviour of the trained pair on held-out ledgers (deterministic reports)."""
-    v2 = ds["X"].shape[1] - 1
-    F = [heads[0](ds["X"][:, 0], ds["mask"][:, 0], ds["H"][:, 0]),
-         heads[1](ds["X"][:, v2], ds["mask"][:, v2], ds["H"][:, v2])]
-    T, D = ds["T"], [ds["D"][:, 0], ds["D"][:, v2]]
+def report_metrics(F, T, D, K, data: dict, v2: int, rw: Reward) -> dict:
+    """Behaviour of a pair from its reports F = [F_0, F_1] on a set of originals.
+    T [n]; D, K lists of two [n] tensors; `data` the arrays from `sample_views`;
+    v2 = index of the second supervisor's view (0 when both see the same ledger)."""
     dirty = T > 0
     out = dict(cost=0.0, charge=0.0, agree=0.0, floor=0.0)
     V = [F[i] - D[i] for i in range(2)]
@@ -230,16 +227,14 @@ def evaluate(heads, ds: dict, data: dict, rw: Reward) -> dict:
     out["under_clean"] = float((-Vm)[~dirty].mean())                  # mean under-report, clean originals
     cap = sum(torch.minimum(torch.clamp(T - V[i], min=0.0), T)[dirty].sum() for i in range(2))
     out["concealed_share"] = float(cap / (2 * T[dirty].sum()))
-    K = [ds["K"][:, 0], ds["K"][:, v2]]
     out["rmse_count"] = float(torch.sqrt(sum(((F[i] - K[i]) ** 2).mean() for i in range(2)) / 2))
     # how much one line of each kind moves the report (least squares over views)
-    st = [data["status"][:, 0], data["status"][:, v2]]
-    tl = [data["tell"][:, 0], data["tell"][:, v2]]
+    views = [0, v2]
     A, y = [], []
     for i in range(2):
-        cols = [np.ones(len(st[i])), (st[i] == 0).sum(1), (st[i] == 1).sum(1),
-                ((st[i] == 2) & ~tl[i]).sum(1), ((st[i] == 2) & tl[i]).sum(1)]
-        A.append(np.stack(cols, 1).astype(float)); y.append(F[i].cpu().numpy())
+        st, tl = data["status"][:, views[i]], data["tell"][:, views[i]]
+        cols = [np.ones(len(st)), (st == 0).sum(1), (st == 1).sum(1), ((st == 2) & ~tl).sum(1), ((st == 2) & tl).sum(1)]
+        A.append(np.stack(cols, 1).astype(float)); y.append(F[i].float().cpu().numpy())
     A, y = np.concatenate(A), np.concatenate(y)
     keep = A.std(0) > 0
     keep[0] = True
@@ -250,13 +245,21 @@ def evaluate(heads, ds: dict, data: dict, rw: Reward) -> dict:
     # mean shading by what the view shows, for comparison with the exact equilibrium
     g = {}
     for i in range(2):
-        key = np.stack([data["K"][:, i if i == 0 else v2], data["R"][:, i if i == 0 else v2],
-                        data["M"][:, i if i == 0 else v2]], 1)
-        sh = (F[i] - K[i]).cpu().numpy()
+        key = np.stack([data["K"][:, views[i]], data["R"][:, views[i]], data["M"][:, views[i]]], 1)
+        sh = (F[i] - K[i]).float().cpu().numpy()
         for row, val in zip(map(tuple, key), sh):
             g.setdefault(row, []).append(float(val))
     out["shading"] = {f"{k},{r},{m}": (float(np.mean(v)), len(v)) for (k, r, m), v in sorted(g.items())}
     return out
+
+
+@torch.no_grad()
+def evaluate(heads, ds: dict, data: dict, rw: Reward) -> dict:
+    """Behaviour of the trained pair on held-out ledgers (deterministic reports)."""
+    v2 = ds["X"].shape[1] - 1
+    F = [heads[0](ds["X"][:, 0], ds["mask"][:, 0], ds["H"][:, 0]),
+         heads[1](ds["X"][:, v2], ds["mask"][:, v2], ds["H"][:, v2])]
+    return report_metrics(F, ds["T"], [ds["D"][:, 0], ds["D"][:, v2]], [ds["K"][:, 0], ds["K"][:, v2]], data, v2, rw)
 
 
 def train_pair(train: dict, test: dict, feats_train, feats_test, rw: Reward, tc: TrainConfig,
