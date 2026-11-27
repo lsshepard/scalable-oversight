@@ -44,7 +44,7 @@ PRICES = {
 
 def claude_backend(model: str, effort: Optional[str] = None, max_tokens: int = 16000,
                    api_key: Optional[str] = None, base_url: str = API_URL,
-                   max_retries: int = 6, timeout: float = 300.0) -> Complete:
+                   max_retries: int = 10, timeout: float = 300.0) -> Complete:
     """Returns complete(system, user) -> Reply.  `api_key` and `base_url` exist for
     tests; real runs take the key from EXPERIMENT_ANTHROPIC_API_KEY."""
     import anthropic

@@ -10,7 +10,7 @@
 set -u
 M=$1; CAP_MAIN=$2; CAP_BASE=$3
 RUN="python experiments/exp6_llm_rounds.py"
-ARGS="--backend anthropic --model $M --effort medium --trajectories 20 --rounds 20 --seed0 2000 --workers 20 --out results/llm_rounds"
+ARGS="--backend anthropic --model $M --effort medium --trajectories 20 --rounds 20 --seed0 2000 --workers 10 --out results/llm_rounds"
 for pass in 1 2; do
   $RUN compare $ARGS --level 5 --max-usd "$CAP_MAIN" || exit 1
 done
