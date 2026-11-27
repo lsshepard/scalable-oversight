@@ -224,6 +224,7 @@ def report_metrics(F, T, D, K, data: dict, v2: int, rw: Reward) -> dict:
     out["charge"] = out["agree"] + out["floor"]
     Vm = 0.5 * (V[0] + V[1])
     out["concealed_dirty"] = float((T - Vm)[dirty].mean())            # mean errors withheld, dirty originals
+    out["net_share"] = float((T - Vm)[dirty].sum() / T[dirty].sum())  # the same as a share of the errors present
     out["under_clean"] = float((-Vm)[~dirty].mean())                  # mean under-report, clean originals
     cap = sum(torch.minimum(torch.clamp(T - V[i], min=0.0), T)[dirty].sum() for i in range(2))
     out["concealed_share"] = float(cap / (2 * T[dirty].sum()))
@@ -332,6 +333,8 @@ def exact_prediction(cfg: LedgerConfig, rw: Reward, plain: bool = False) -> dict
     Tm = m.Tvals[:, None]
     cap = np.minimum(np.maximum(-g[None, :], 0.0), Tm)
     share = float((m.joint * cap).sum() / (m.joint * Tm).sum())
+    mean_T_dirty = float((m.pT * m.Tvals)[1:].sum() / (1 - m.p0))
     return dict(bounded=True, converged=res.converged, concealed_dirty=conc["dirty"], under_clean=conc["clean"],
-                concealed_share=share, agree=agree, floor=floor, charge=agree + floor,
+                concealed_share=share, net_share=conc["dirty"] / mean_T_dirty, agree=agree, floor=floor,
+                charge=agree + floor,
                 shading={f"{int(k)},{int(r)},{int(mm)}": float(v) for k, r, mm, v in zip(m.K, m.R, m.M, g)})

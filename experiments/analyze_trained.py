@@ -20,7 +20,7 @@ import numpy as np
 
 BLUE, ORANGE, AQUA = "#257de0", "#f47230", "#00b894"
 INK, INK2, GRID, AXIS, SURFACE = "#191919", "#666666", "#e7e7e7", "#c2c2c2", "#ffffff"
-METRICS = ("concealed_share", "concealed_dirty", "under_clean", "charge", "w_system", "w_inserted_plain",
+METRICS = ("net_share", "concealed_share", "concealed_dirty", "under_clean", "charge", "w_system", "w_inserted_plain",
            "w_inserted_tell", "rmse_count")
 
 
@@ -50,20 +50,20 @@ def fmt(d, digits=3):
 
 
 def write_table(groups, out):
-    md = ["| Condition | Estimator | Seeds | Concealed share: trained | exact | Withheld per dirty original: trained | exact | "
+    md = ["| Condition | Estimator | Seeds | Share of system errors withheld: trained | exact | Withheld per dirty original: trained | exact | "
           "Charge per round: trained | exact | Weight of a system error | of an inserted error | of an inserted error with tell | "
           "Count error (RMSE) |", "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     rows = []
     for g in groups:
         ex = g["exact"]
         e = (lambda k: f"{ex[k]:.3f}") if ex.get("bounded") else (lambda k: "unbounded" if g["kind"] != "supervised" else "")
-        md.append(f"| {g['label']} | {g['estimator']} | {g['seeds']} | {fmt(g['concealed_share'])} | {e('concealed_share')} | "
+        md.append(f"| {g['label']} | {g['estimator']} | {g['seeds']} | {fmt(g['net_share'])} | {e('net_share')} | "
                   f"{fmt(g['concealed_dirty'])} | {e('concealed_dirty')} | {fmt(g['charge'])} | {e('charge')} | "
                   f"{fmt(g['w_system'], 2)} | {fmt(g['w_inserted_plain'], 2)} | {fmt(g['w_inserted_tell'], 2)} | {fmt(g['rmse_count'], 2)} |")
         rows.append(dict(label=g["label"], estimator=g["estimator"], cond=g["cond"], kind=g["kind"], b=g["b"], eps=g["eps"],
                          seeds=g["seeds"], shading_rms_gap=g["gap"],
                          **{f"{m}_{s}": g[m][s] for m in METRICS for s in ("mean", "lo", "hi")},
-                         **{f"exact_{k}": ex.get(k) for k in ("concealed_share", "concealed_dirty", "under_clean", "charge")}))
+                         **{f"exact_{k}": ex.get(k) for k in ("net_share", "concealed_share", "concealed_dirty", "under_clean", "charge")}))
     (out / "table.md").write_text("\n".join(md) + "\n")
     with (out / "table.csv").open("w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0])); w.writeheader(); w.writerows(rows)
@@ -94,22 +94,25 @@ def fig_main(groups, path, estimator):
         return
     fig, ax = plt.subplots(figsize=(1.55 * len(present) + 1.2, 3.6)); _style(ax)
     for i, (label, _) in enumerate(present):
-        g = gs[label]; d = g["concealed_share"]
+        g = gs[label]; d = g["net_share"]
+        clip = lambda v: float(np.clip(v, 0.0, 1.3))
+        d = dict(mean=clip(d["mean"]), lo=clip(d["lo"]), hi=clip(d["hi"]), raw=d["mean"])
         ax.bar(i, d["mean"], width=0.36, color=BLUE, linewidth=0, zorder=2)
         if d["hi"] - d["lo"] > 5e-4:
             ax.plot([i, i], [d["lo"], d["hi"]], color=INK, linewidth=1.0, zorder=3)
-        ax.text(i, max(d["hi"], d["mean"]) + 0.035, f"{d['mean']:.2f}", ha="center", va="bottom", fontsize=9, color=INK)
+        ax.text(i, max(d["hi"], d["mean"]) + 0.035, f"{d['raw']:.2f}" if d["raw"] <= 1.3 else "> 1.3\n(still falling)",
+                ha="center", va="bottom", fontsize=9, color=INK)
         if g["exact"].get("bounded"):
-            ax.plot([i - 0.27, i + 0.27], [g["exact"]["concealed_share"]] * 2, color=ORANGE, linewidth=2.2, zorder=4,
+            ax.plot([i - 0.27, i + 0.27], [g["exact"]["net_share"]] * 2, color=ORANGE, linewidth=2.2, zorder=4,
                     solid_capstyle="round")
         else:
-            ax.text(i, 0.5, "exact:\nno bound", ha="center", va="center", fontsize=8, color=SURFACE, zorder=5)
+            ax.text(i, 0.6, "exact:\nno bound", ha="center", va="center", fontsize=8, color=SURFACE, zorder=5)
     ax.set_xticks(range(len(present))); ax.set_xticklabels([s for _, s in present], fontsize=8, color=INK2)
-    ax.set_ylim(0, 1.16); ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0]); ax.set_xlim(-0.6, len(present) - 0.4)
-    ax.set_ylabel("Share of the system's errors concealed", fontsize=9, color=INK2)
+    ax.set_ylim(0, 1.52); ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0, 1.25]); ax.set_xlim(-0.6, len(present) - 0.4)
+    ax.set_ylabel("System errors withheld,\nas a share of those present", fontsize=9, color=INK2)
     ax.legend(handles=[Line2D([0], [0], color=BLUE, linewidth=6, label="trained pair"),
                        Line2D([0], [0], color=ORANGE, linewidth=2.2, label="exact equilibrium")],
-              loc="upper center", bbox_to_anchor=(0.5, 1.16), ncol=2, frameon=False, fontsize=8.5, labelcolor=INK2)
+              loc="upper center", bbox_to_anchor=(0.5, 1.14), ncol=2, frameon=False, fontsize=8.5, labelcolor=INK2)
     fig.tight_layout(); _save(fig, path)
 
 
@@ -129,14 +132,14 @@ def fig_dials(groups, path, estimator):
     fig, axes = plt.subplots(1, len(panels), figsize=(4.6 * len(panels), 3.4), squeeze=False)
     for ax, (gl, xs, xlabel) in zip(axes[0], panels):
         _style(ax)
-        ax.plot(xs, [g["exact"]["concealed_share"] for g in gl], color=ORANGE, linewidth=2, zorder=2, label="exact equilibrium")
-        ax.errorbar(xs, [g["concealed_share"]["mean"] for g in gl],
-                    yerr=[[g["concealed_share"]["mean"] - g["concealed_share"]["lo"] for g in gl],
-                          [g["concealed_share"]["hi"] - g["concealed_share"]["mean"] for g in gl]],
+        ax.plot(xs, [g["exact"]["net_share"] for g in gl], color=ORANGE, linewidth=2, zorder=2, label="exact equilibrium")
+        ax.errorbar(xs, [g["net_share"]["mean"] for g in gl],
+                    yerr=[[g["net_share"]["mean"] - g["net_share"]["lo"] for g in gl],
+                          [g["net_share"]["hi"] - g["net_share"]["mean"] for g in gl]],
                     fmt="o", color=BLUE, markersize=6.5, markeredgecolor=SURFACE, markeredgewidth=1.2, elinewidth=1,
                     ecolor=INK, zorder=3, label="trained pair")
-        ax.set_xlabel(xlabel, fontsize=9, color=INK2); ax.set_ylim(-0.04, 1.08); ax.set_xticks(xs)
-    axes[0][0].set_ylabel("Share of the system's errors concealed", fontsize=9, color=INK2)
+        ax.set_xlabel(xlabel, fontsize=9, color=INK2); ax.set_ylim(-0.04, 1.3); ax.set_xticks(xs)
+    axes[0][0].set_ylabel("System errors withheld,\nas a share of those present", fontsize=9, color=INK2)
     axes[0][0].legend(frameon=False, fontsize=8.5, labelcolor=INK2, loc="upper left")
     fig.tight_layout(); _save(fig, path)
 

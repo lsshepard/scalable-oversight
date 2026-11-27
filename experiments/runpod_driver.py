@@ -28,7 +28,7 @@ import urllib.parse
 import urllib.request
 
 API = "https://api.runpod.io/graphql"
-REPO = "https://github.com/lsshepard/scalable-oversight.git"
+RAW = "https://raw.githubusercontent.com/lsshepard/scalable-oversight"
 IMAGE = "runpod/pytorch:2.2.0-cu1290-torch291-ubuntu2404"
 GPUS = ["NVIDIA RTX A6000", "NVIDIA A40", "NVIDIA GeForce RTX 4090", "NVIDIA RTX A5000", "NVIDIA GeForce RTX 3090",
         "NVIDIA L40S", "NVIDIA GeForce RTX 5090"]
@@ -83,18 +83,17 @@ def cmd_up(a):
         sys.exit(f"state file already holds pod {state()['pod']}; run `down` first")
     token = secrets.token_hex(24)
     branch = a.branch or subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], text=True).strip()
-    boot = (f"cd /workspace && rm -rf so && git clone --depth 1 -b {branch} {REPO} so && cd so && "
-            f"pip install -q transformers peft accelerate scipy safetensors && python experiments/pod_server.py 8000")
-    args = "bash -c '" + boot + "'"
+    # the pod fetches its start script from the public repository; nothing secret is in it
+    args = f"bash -c 'curl -sL {RAW}/refs/heads/{branch}/experiments/pod_boot.sh | bash -s {branch}'"
     last = None
     for gpu in ([a.gpu] if a.gpu else GPUS):
         q = ('mutation { podFindAndDeployOnDemand(input: { cloudType: %s, gpuCount: 1, volumeInGb: %d, '
              'containerDiskInGb: %d, minVcpuCount: 4, minMemoryInGb: 24, gpuTypeId: %s, name: %s, imageName: %s, '
-             'dockerArgs: %s, ports: "8000/http", volumeMountPath: "/workspace", '
-             'env: [{ key: "POD_TOKEN", value: %s }, { key: "HF_HUB_ENABLE_HF_TRANSFER", value: "0" }] }) '
+             'dockerArgs: %s, ports: "8000/http,8888/http", volumeMountPath: "/workspace", '
+             'env: [{ key: "POD_TOKEN", value: %s }, { key: "JUPYTER_PASSWORD", value: %s }] }) '
              '{ id imageName machineId costPerHr machine { podHostId gpuDisplayName } } }') % (
             a.cloud, a.volume, a.disk, json.dumps(gpu), json.dumps(a.name), json.dumps(a.image), json.dumps(args),
-            json.dumps(token))
+            json.dumps(token), json.dumps(token))
         try:
             pod = gql(q)["podFindAndDeployOnDemand"]
         except RuntimeError as e:
