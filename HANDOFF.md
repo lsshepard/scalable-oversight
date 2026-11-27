@@ -881,7 +881,10 @@ agreement the same concealment is free and invisible.
 **Corrections to earlier statements in this file.** 13.13 called Sonnet 4.6 the model that
 "weighs payments"; the confirmatory run shows a large placebo effect for it, so the clean
 deterrence case is Opus 5. The concealed share in 13.8-13.10 (experiment 1) is the net
-measure; 13.14 and `analyze_motive.py` use the capped measure and report both.
+measure; 13.14 and `analyze_motive.py` use the capped measure and report both. The cap was
+introduced during analysis, after the confirmatory data were in (the plan in 13.13 does not
+mention it); with the net measure goal/perturb in rounds 11-15 is 0.28 for Sonnet 4.6, 2.42
+for Opus 4.6 and 0.03 for Opus 5.
 
 **Spend.** Recorded in result files: experiment 1 $32.82; experiment 2 pilots $10.33; screen
 $17.13; pilot $7.26; confirmatory $48.96 (Sonnet 4.6 $11.86, Opus 4.6 $22.23, Opus 5 $14.87);
