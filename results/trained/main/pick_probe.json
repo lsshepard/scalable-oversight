@@ -1,0 +1,74 @@
+[
+ {
+  "feats": "results/trained/pick_Qwen2.5-0.5B-Instruct",
+  "cond": "hidden",
+  "features": "logprob",
+  "auc": 0.9990779590532048,
+  "catch_at_1pct": 0.9697420634920635,
+  "count_rmse": 0.36289965150726267
+ },
+ {
+  "feats": "results/trained/pick_Qwen2.5-0.5B-Instruct",
+  "cond": "hidden",
+  "features": "hidden",
+  "auc": 0.9169303795367971,
+  "catch_at_1pct": 0.6364087301587301,
+  "count_rmse": 0.8510845498477388
+ },
+ {
+  "feats": "results/trained/pick_Qwen2.5-0.5B-Instruct",
+  "cond": "hidden",
+  "features": "both",
+  "auc": 0.9990147396462209,
+  "catch_at_1pct": 0.9871031746031746,
+  "count_rmse": 0.28794231019989514
+ },
+ {
+  "feats": "results/trained/pick_Qwen2.5-1.5B-Instruct",
+  "cond": "hidden",
+  "features": "logprob",
+  "auc": 0.9991327492059244,
+  "catch_at_1pct": 0.9970238095238095,
+  "count_rmse": 0.21789762186599318
+ },
+ {
+  "feats": "results/trained/pick_Qwen2.5-1.5B-Instruct",
+  "cond": "hidden",
+  "features": "hidden",
+  "auc": 0.9995743724387014,
+  "catch_at_1pct": 0.9955357142857143,
+  "count_rmse": 0.23170199800001376
+ },
+ {
+  "feats": "results/trained/pick_Qwen2.5-1.5B-Instruct",
+  "cond": "hidden",
+  "features": "both",
+  "auc": 0.999927521687741,
+  "catch_at_1pct": 0.9985119047619048,
+  "count_rmse": 0.15051861169849248
+ },
+ {
+  "feats": "results/trained/pick_Qwen3-4B",
+  "cond": "hidden",
+  "features": "logprob",
+  "auc": 0.9997754134715147,
+  "catch_at_1pct": 0.9975198412698413,
+  "count_rmse": 0.23547692063990205
+ },
+ {
+  "feats": "results/trained/pick_Qwen3-4B",
+  "cond": "hidden",
+  "features": "hidden",
+  "auc": 0.9997193954353,
+  "catch_at_1pct": 0.9985119047619048,
+  "count_rmse": 0.16040547476633893
+ },
+ {
+  "feats": "results/trained/pick_Qwen3-4B",
+  "cond": "hidden",
+  "features": "both",
+  "auc": 0.9995221873901543,
+  "catch_at_1pct": 0.9975198412698413,
+  "count_rmse": 0.13797151144649497
+ }
+]

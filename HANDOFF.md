@@ -987,6 +987,28 @@ the token in the state file). Plan on the pod:
 (Plan rows whose features are missing are skipped, so `ceiling nostake` works on a folder
 that holds only `hidden`.)
 
+**First results on a real model's features (22:35, CPU, Qwen2.5-0.5B frozen, 1,500 training
+originals, hidden insertions).** Lessons that also apply on the GPU:
+- *Two heads memorise a small training set and collude on it.* With 147 feature dimensions
+  the pair's cost on fresh ledgers rose during training and reports drifted down: a ledger
+  both have seen before works like a surviving signal. Remedies used: few dimensions
+  (`--pca 8`, i.e. 8 principal directions per layer plus the three log-probability columns),
+  a small head (`--hidden 16`), and `--val-frac 0.2`, which keeps the heads from the step
+  where the pair's own cost on held-out training originals was lowest. With 8,000+ originals
+  on the GPU the full features may be fine; check that the held-out cost does not rise.
+- *Capacity was chosen after looking at test results on the hidden condition* (48, 24, 8 and 2
+  directions were tried; files in `results/trained/qwen05_cpu/exploratory/`). Say so.
+- *Perception noise shifts the equilibrium.* A head trained on true counts has a count error
+  of 0.39 to 0.45 and is charged 0.23 to 0.36 per round by the mechanism. With no stake the
+  payment-trained pair over-reports by about 0.4 (a safety margin against the floor, cheap
+  because the reporting charge is only 0.02). With stake 0.5 it withholds 0.16 to 0.20 of the
+  system's errors under both terms (exact, perfect perception: 0.20), 0.28 to 0.29 under the
+  floor only (0.30), and diverges under agreement only.
+- Full hidden-condition set (three seeds, both estimators) was running when this was written:
+  `train_hidden_analytic.json`, `train_hidden_reinforce.json`. Features for rec100 and plain
+  follow (about 23:20 and 23:55); then run the same command with `--only-conds rec100 plain`
+  and `--plans ceiling nostake main recog`.
+
 **For the session that has the key (written 21:35).** The session that wrote this could not
 see `RUNPOD_API_KEY` (added by Liam after it started) and may not start helper sessions. Liam
 asked to "test that it works for your purposes". Do this first, in order, and stop with
@@ -1010,3 +1032,70 @@ analysis and figures, one or two runs that train the whole model through an adap
 payments, the write-up in `REPORT_LLM.md`. Main risk: the frozen small model does not see
 arithmetic errors crisply enough; remedies are a larger model (Qwen3-4B is ungated) or the
 adapter runs.
+
+### 13.16 GPU runs (2026-11-27, 21:45 to 23:10; session on branch `claude/sleepy-shannon-khpijk`)
+
+This session holds `RUNPOD_API_KEY` and develops on `claude/sleepy-shannon-khpijk` (branched from
+`claude/sweet-brown-bx2roi`; the CPU session's commits up to 19f6d9f are merged in). Pod: one RTX
+A6000 at $0.69/h, started 21:47 (credit $50.91 before it).
+
+**Key test passed end to end**: `balance`, `up`, `wait` (job server up after 289 s; the image does
+run `dockerArgs`), `run hello` (CUDA available). Two driver quirks: `get` fails with HTTP 500 for
+paths behind a symlink (copy to a real folder under the repository first); the job log is
+buffered when piped through `grep`, so check files rather than logs.
+
+**Model choice (step 1).** Per-line logistic probes (`exp9_trained.py probe`), AUC for "this line is
+wrong" on test lines, 64 principal components of the hidden states:
+
+| model | log-prob only | hidden only | both |
+|---|---|---|---|
+| Qwen2.5-0.5B | 0.999 | 0.917 | 0.999 |
+| Qwen2.5-1.5B | 0.999 | 1.000 | 1.000 |
+| Qwen3-4B | 1.000 | 1.000 | 1.000 |
+
+So perception is not the bottleneck even at 0.5B. The weak label-trained ceiling of the pilot
+(count error 0.77) came from the head **overfitting the full 2,691 to 4,611 features** within 250
+steps; with the log-probabilities alone the same head reaches 0.33 (0.5B) and 0.23 (1.5B). Chosen:
+**Qwen2.5-1.5B** (hidden states alone see errors, which the tell needs; 4B is no better and 2.5x
+slower). The tell (doubled space) among wrong lines is readable from 8 / 16 / 32 / 64 principal
+components with AUC 0.71 / 0.74 / 0.93 / 0.999, so 64 components are needed; with them, weight
+decay 0.01 (coupled L2 in Adam) brings the label-trained head to count error 0.21 (hidden),
+0.20 (rec100), 0.14 (plain). Setting used for every run below: `--reduce 64 --weight-decay 0.01`
+(64 components of the three concatenated layers, fit on training lines without labels, plus the
+three log-probability features).
+
+**Main runs (step 2).** Features: `extract --model Qwen/Qwen2.5-1.5B-Instruct --conds hidden plain
+rec050 rec090 rec100 marker --n-train 6000 --n-test 1500` (6,000 not 8,000: disk). Training: all
+plans, 3 seeds, both estimators, code at commit 958269d (before the merge; the merged code uses
+AdamW, under which `--weight-decay 0.01` is weaker, so a rerun at HEAD is not identical).
+Results in `results/trained/main/` (`train_*_r64.json`, `analysis/table.md`, figures). Share of
+the system's errors withheld (net, can exceed 1 when clean originals are under-reported),
+trained (analytic / pay-only) against exact for perfect perception, stake 0.5:
+
+| condition | trained | exact |
+|---|---|---|
+| plain agreement | 1.19 / 1.20 | 1.21 |
+| agreement only | diverges (about 1,000) | unbounded |
+| floor only | 0.38 / 0.37 | 0.30 |
+| both terms | 0.28 / 0.26 | 0.20 |
+| both terms, 50 / 90 / 100% recognizable | 0.36, 0.71, 1.09 / 0.32, 0.66, 1.07 | 0.26, 0.66, 1.21 |
+| surviving signal | 1.10 / 1.08 | 1.08 |
+| stake 0.1 / 0.25 / 1.0 | 0.00, 0.12, 0.53 / -0.02, 0.10, 0.51 | 0.05, 0.11, 0.39 |
+| no stake: plain / both terms / recognizable | 1.01, -0.16, 0.24 / 0.98, -0.19, 0.22 | 1.01, 0.02, 1.01 |
+
+Reading. Every qualitative prediction with a stake holds, with both estimators and tight seed
+ranges: plain agreement conceals everything; agreement alone diverges; each term alone is worse
+than both; concealment rises with recognizability and with the stake; with recognizable
+insertions the learned report puts weight -0.07 on a system error and 0.99 on an inserted
+error with the tell (they learn to report only what can be checked). Trained pairs conceal
+somewhat more than the exact value (0.26 to 0.28 against 0.20) and pay a larger charge (0.2
+against 0.03), consistent with residual count error (0.4). **One departure**: with no stake and
+recognizable insertions the exact equilibrium conceals everything, but trained pairs conceal
+only 0.24; the only push there is the reporting charge eps = 0.02, and 4,000 steps do not get
+there (system-error weight 0.64 and still falling). Say so; do not tune it away. "Both terms,
+no stake" over-reports slightly (-0.16), which is the floor guarding against count noise.
+
+**Adapter run (step 3)** started 22:59 on the pod: `e2e --model Qwen/Qwen2.5-1.5B-Instruct
+--plans main nostake --only 'plain agreement' 'both terms' 'both terms, insertions recognizable'
+'both terms, no stake'`, log in `/root/e2e.log`, results to `/root/main/e2e.json` (copy to
+`results/trained/main_out/` before `get`).

@@ -173,6 +173,7 @@ def run_plan(plan, get_data, tc_kwargs, seeds, device, log=print):
             fin = res["final"]
             dist = shading_distance(fin["shading"], ex["shading"]) if ex.get("bounded") else float("nan")
             row = dict(label=label, cond=cond, kind=kind, b=b, eps=eps, estimator=est, seed=seed,
+                       selected_step=res.get("selected_step"),
                        seconds=time.time() - t0, exact=ex, final={k: v for k, v in fin.items() if k != "shading"},
                        shading=fin["shading"], shading_rms_gap=dist,
                        trace=[{k: v for k, v in t.items() if k != "shading"} for t in res["trace"]])
@@ -203,30 +204,51 @@ def cmd_synth(args):
         pathlib.Path(args.out).write_text(json.dumps(rows))
 
 
+def reduce_features(ftrain, ftest, mask_train, hidden: int, k: int):
+    """Label-free reduction for small machines: per layer, the first k principal directions of
+    the line features (fitted on the training lines); the three log-probability columns are kept."""
+    Xtr, Htr = (np.asarray(a, np.float32) for a in ftrain)
+    Xte, Hte = (np.asarray(a, np.float32) for a in ftest)
+    n_layers = (Xtr.shape[-1] - 3) // hidden
+    out_tr, out_te = [], []
+    for j in range(n_layers):
+        blk = slice(j * hidden, (j + 1) * hidden)
+        lines = Xtr[..., blk][mask_train]
+        mu = lines.mean(0)
+        U = np.linalg.svd(lines[:20000] - mu, full_matrices=False)[2][:k]
+        out_tr.append((Xtr[..., blk] - mu) @ U.T); out_te.append((Xte[..., blk] - mu) @ U.T)
+    out_tr.append(Xtr[..., -3:]); out_te.append(Xte[..., -3:])
+    flat = Htr.reshape(-1, Htr.shape[-1]); mu = flat.mean(0)
+    U = np.linalg.svd(flat[:20000] - mu, full_matrices=False)[2][:16]
+    return (np.concatenate(out_tr, -1), (Htr - mu) @ U.T), (np.concatenate(out_te, -1), (Hte - mu) @ U.T)
+
+
 def cmd_train(args):
     import torch
     feats = pathlib.Path(args.feats)
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
-    cache, reds = {}, {}
+    hidden = json.loads((feats / "meta.json").read_text())["hidden"] if args.pca else 0
+    cache = {}
     def get(cond, split):
         if (cond, split) not in cache:
-            data, (X, H) = load(feats, cond, split)
-            if args.reduce:
-                if cond not in reds:
-                    dtr, (Xtr, Htr) = (data, (X, H)) if split == "train" else load(feats, cond, "train")
-                    reds[cond] = fit_reduction(dtr, Xtr, Htr, args.reduce)
-                X, H = apply_reduction(reds[cond], X, H)
+            (dtr, ftr), (dte, fte) = load(feats, cond, "train"), load(feats, cond, "test")
+            if args.pca:      # label-free reduction per layer (CPU session)
+                ftr, fte = reduce_features(ftr, fte, dtr["status"] >= 0, hidden, args.pca)
+            elif args.reduce:  # principal components of all hidden-state layers together (GPU session)
+                red = fit_reduction(dtr, *ftr, args.reduce)
+                ftr, fte = apply_reduction(red, *ftr), apply_reduction(red, *fte)
             if args.lp_only:
-                X, H = X[..., -N_LP:], H[..., :1] * 0
-            cache[(cond, split)] = (data, (X, H))
+                ftr, fte = [(X[..., -N_LP:], H[..., :1] * 0) for X, H in (ftr, fte)]
+            cache[(cond, "train")], cache[(cond, "test")] = (dtr, ftr), (dte, fte)
         return cache[(cond, split)]
-    plan = [r for name in args.plans for r in PLANS[name]]
+    plan = [r for name in args.plans for r in PLANS[name] if not args.only_conds or r[1] in args.only_conds]
+    plan = list(dict.fromkeys(plan))                 # "both terms" is in two plans; run it once
     rows = run_plan(plan, get, dict(steps=args.steps, estimators=args.estimators, lr=args.lr, batch=args.batch,
-                                    sigma=args.sigma, weight_decay=args.weight_decay), range(args.seeds), device)
+                                    sigma=args.sigma, weight_decay=args.weight_decay, val_frac=args.val_frac,
+                                    hidden=args.hidden, eval_every=args.eval_every), range(args.seeds), device)
     for r in rows:
-        r.update(reduce=args.reduce, lp_only=args.lp_only, feats=str(feats))
-    tag = f"_r{args.reduce}" if args.reduce else ""
-    tag += "_lp" if args.lp_only else ""
+        r.update(reduce=args.reduce, pca=args.pca, lp_only=args.lp_only, feats=str(feats))
+    tag = (f"_r{args.reduce}" if args.reduce else "") + ("_lp" if args.lp_only else "")
     out = pathlib.Path(args.out or feats / f"train_{'_'.join(args.plans)}{tag}.json")
     out.write_text(json.dumps(rows))
     print(f"written {out}")
@@ -331,6 +353,10 @@ if __name__ == "__main__":
     tr = sub.add_parser("train"); _train_args(tr)
     tr.add_argument("--feats", required=True); tr.add_argument("--device", default="")
     tr.add_argument("--weight-decay", type=float, default=0.0)
+    tr.add_argument("--pca", type=int, default=0, help="keep this many principal directions per layer (0 = all features)")
+    tr.add_argument("--val-frac", type=float, default=0.0, help="share of training originals held out to pick the stopping step")
+    tr.add_argument("--only-conds", nargs="*", default=[], help="run only plan rows whose views are of these conditions")
+    tr.add_argument("--hidden", type=int, default=64); tr.add_argument("--eval-every", type=int, default=250)
     tr.add_argument("--reduce", type=int, default=0, help="principal components of the hidden states (0 = all)")
     tr.add_argument("--lp-only", action="store_true", help="only the log-probability features")
     pr = sub.add_parser("probe", help="per-line logistic probes: how well each model sees wrong lines")
