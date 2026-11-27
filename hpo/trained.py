@@ -202,8 +202,8 @@ class TrainConfig:
 def _prep(data: dict, X: np.ndarray, H: np.ndarray, device: str, stats=None):
     """Tensors for one dataset.  X [n, V, L, d], H [n, V, dh]; features are standardised
     with the statistics of the training set (passed on to the test set)."""
-    Xt = torch.as_tensor(np.asarray(X), dtype=torch.float32, device=device)
-    Ht = torch.as_tensor(np.asarray(H), dtype=torch.float32, device=device)
+    Xt = torch.tensor(np.asarray(X), dtype=torch.float32, device=device)      # a copy: standardised in place below
+    Ht = torch.tensor(np.asarray(H), dtype=torch.float32, device=device)
     mask = torch.as_tensor(data["status"] >= 0, device=device)
     if stats is None:
         flat = Xt[mask]
