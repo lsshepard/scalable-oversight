@@ -192,6 +192,9 @@ class TrainConfig:
     eval_every: int = 250
     seed: int = 0
     supervised: bool = False         # train on the true count instead (perception ceiling)
+    val_frac: float = 0.0            # > 0: hold out this share of the training originals and keep the
+                                     # heads from the evaluation step where the pair's own cost on
+                                     # them was lowest (no labels involved; see train_pair)
     hidden: int = 64
     k: int = 8
 
@@ -267,31 +270,59 @@ def evaluate(heads, ds: dict, data: dict, rw: Reward) -> dict:
 def train_pair(train: dict, test: dict, feats_train, feats_test, rw: Reward, tc: TrainConfig,
                device: str = "cpu", log=None) -> dict:
     """Train two supervisors against each other on `rw`; returns the evaluation trace.
-    `feats_*` = (X, H) arrays for the datasets from `sample_views`."""
+    `feats_*` = (X, H) arrays for the datasets from `sample_views`.
+
+    With few training originals the two heads can memorise them and settle on shifts that
+    are specific to a ledger they have both seen before (its identity then works like a
+    surviving signal), which shows up as rising cost on fresh ledgers.  `tc.val_frac` holds
+    out part of the training originals and keeps the heads from the step at which the pair's
+    own cost on those was lowest.  The stake is part of that cost; no label of the truth
+    is used beyond it."""
     torch.manual_seed(tc.seed)
     ds, stats = _prep(train, feats_train[0], feats_train[1], device)
     dt, _ = _prep(test, feats_test[0], feats_test[1], device, stats)
     d_line, d_head = ds["X"].shape[-1], ds["H"].shape[-1]
     heads = [Head(d_line, d_head, tc.k, tc.hidden, seed=1000 * tc.seed + i).to(device) for i in range(2)]
-    opt = torch.optim.Adam([p for h in heads for p in h.parameters()], lr=tc.lr, weight_decay=tc.weight_decay)
+    opt = torch.optim.AdamW([p for h in heads for p in h.parameters()], lr=tc.lr, weight_decay=tc.weight_decay)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, tc.steps, eta_min=tc.lr * 0.05)
-    n, v2 = ds["X"].shape[0], ds["X"].shape[1] - 1
+    n_all, v2 = ds["X"].shape[0], ds["X"].shape[1] - 1
     gen = torch.Generator(device="cpu").manual_seed(tc.seed)
-    trace = []
+    n_val = int(round(tc.val_frac * n_all))
+    perm = torch.randperm(n_all, generator=gen)
+    val_idx, fit_idx = perm[:n_val].to(device), perm[n_val:].to(device)
+    n = len(fit_idx)
+
+    def reports(idx):
+        return [heads[0](ds["X"][idx, 0], ds["mask"][idx, 0], ds["H"][idx, 0]),
+                heads[1](ds["X"][idx, v2], ds["mask"][idx, v2], ds["H"][idx, v2])]
+
+    @torch.no_grad()
+    def val_cost():
+        F = reports(val_idx)
+        T, D, K = ds["T"][val_idx], [ds["D"][val_idx, 0], ds["D"][val_idx, v2]], [ds["K"][val_idx, 0], ds["K"][val_idx, v2]]
+        if tc.supervised:
+            return float(sum(((F[i] - K[i]) ** 2).mean() for i in range(2)) / 2)
+        return float(sum(cost_t(rw, F[i], F[1 - i], D[i], D[1 - i], T)[0].mean() for i in range(2)) / 2)
+
+    trace, best = [], (float("inf"), -1, None)
     for step in range(tc.steps + 1):
         if step % tc.eval_every == 0 or step == tc.steps:
             ev = evaluate(heads, dt, test, rw)
             ev["step"] = step
+            if n_val:
+                ev["val_cost"] = val_cost()
+                if ev["val_cost"] < best[0]:
+                    best = (ev["val_cost"], step, [{k: v.clone() for k, v in h.state_dict().items()} for h in heads])
             trace.append(ev)
             if log:
                 log(f"    step {step:5d}  concealed/dirty {ev['concealed_dirty']:+.3f}  share {ev['concealed_share']:.3f}  "
                     f"clean {ev['under_clean']:+.3f}  charge {ev['charge']:.3f}  w(system) {ev['w_system']:+.2f}  "
-                    f"w(ins) {ev['w_inserted_plain']:+.2f}  w(ins,tell) {ev['w_inserted_tell']:+.2f}  rmse {ev['rmse_count']:.2f}")
+                    f"w(ins) {ev['w_inserted_plain']:+.2f}  w(ins,tell) {ev['w_inserted_tell']:+.2f}  rmse {ev['rmse_count']:.2f}"
+                    + (f"  val cost {ev['val_cost']:.3f}" if n_val else ""))
         if step == tc.steps:
             break
-        idx = torch.randint(0, n, (tc.batch,), generator=gen).to(device)
-        F = [heads[0](ds["X"][idx, 0], ds["mask"][idx, 0], ds["H"][idx, 0]),
-             heads[1](ds["X"][idx, v2], ds["mask"][idx, v2], ds["H"][idx, v2])]
+        idx = fit_idx[torch.randint(0, n, (tc.batch,), generator=gen).to(device)]
+        F = reports(idx)
         T, D = ds["T"][idx], [ds["D"][idx, 0], ds["D"][idx, v2]]
         if tc.supervised:
             K = [ds["K"][idx, 0], ds["K"][idx, v2]]
@@ -312,7 +343,13 @@ def train_pair(train: dict, test: dict, feats_train, feats_test, rw: Reward, tc:
         opt.zero_grad(set_to_none=True)
         loss.backward()
         opt.step(); sched.step()
-    return dict(trace=trace, final=trace[-1])
+    final = trace[-1]
+    if n_val and best[2] is not None and best[1] != trace[-1]["step"]:
+        for h, sd in zip(heads, best[2]):
+            h.load_state_dict(sd)
+        final = evaluate(heads, dt, test, rw)
+        final["step"], final["val_cost"] = best[1], best[0]
+    return dict(trace=trace, final=final, selected_step=final["step"])
 
 
 # ------------------------------------------------------------------ exact predictions

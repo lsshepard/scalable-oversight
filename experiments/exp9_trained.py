@@ -143,6 +143,7 @@ def run_plan(plan, get_data, tc_kwargs, seeds, device, log=print):
             fin = res["final"]
             dist = shading_distance(fin["shading"], ex["shading"]) if ex.get("bounded") else float("nan")
             row = dict(label=label, cond=cond, kind=kind, b=b, eps=eps, estimator=est, seed=seed,
+                       selected_step=res.get("selected_step"),
                        seconds=time.time() - t0, exact=ex, final={k: v for k, v in fin.items() if k != "shading"},
                        shading=fin["shading"], shading_rms_gap=dist,
                        trace=[{k: v for k, v in t.items() if k != "shading"} for t in res["trace"]])
@@ -205,9 +206,11 @@ def cmd_train(args):
                 ftr, fte = reduce_features(ftr, fte, dtr["status"] >= 0, hidden, args.pca)
             cache[(cond, "train")], cache[(cond, "test")] = (dtr, ftr), (dte, fte)
         return cache[(cond, split)]
-    plan = [r for name in args.plans for r in PLANS[name]]
+    plan = [r for name in args.plans for r in PLANS[name] if not args.only_conds or r[1] in args.only_conds]
+    plan = list(dict.fromkeys(plan))                 # "both terms" is in two plans; run it once
     rows = run_plan(plan, get, dict(steps=args.steps, estimators=args.estimators, lr=args.lr, batch=args.batch,
-                                    sigma=args.sigma, weight_decay=args.weight_decay), range(args.seeds), device)
+                                    sigma=args.sigma, weight_decay=args.weight_decay, val_frac=args.val_frac,
+                                    hidden=args.hidden, eval_every=args.eval_every), range(args.seeds), device)
     out = pathlib.Path(args.out or feats / f"train_{'_'.join(args.plans)}.json")
     out.write_text(json.dumps(rows))
     print(f"written {out}")
@@ -268,6 +271,9 @@ if __name__ == "__main__":
     tr.add_argument("--feats", required=True); tr.add_argument("--device", default="")
     tr.add_argument("--weight-decay", type=float, default=0.0)
     tr.add_argument("--pca", type=int, default=0, help="keep this many principal directions per layer (0 = all features)")
+    tr.add_argument("--val-frac", type=float, default=0.0, help="share of training originals held out to pick the stopping step")
+    tr.add_argument("--only-conds", nargs="*", default=[], help="run only plan rows whose views are of these conditions")
+    tr.add_argument("--hidden", type=int, default=64); tr.add_argument("--eval-every", type=int, default=250)
     e = sub.add_parser("extract")
     e.add_argument("--model", required=True); e.add_argument("--adapter", default="")
     e.add_argument("--conds", nargs="+", default=["hidden"])

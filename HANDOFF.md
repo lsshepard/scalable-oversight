@@ -987,6 +987,28 @@ the token in the state file). Plan on the pod:
 (Plan rows whose features are missing are skipped, so `ceiling nostake` works on a folder
 that holds only `hidden`.)
 
+**First results on a real model's features (22:35, CPU, Qwen2.5-0.5B frozen, 1,500 training
+originals, hidden insertions).** Lessons that also apply on the GPU:
+- *Two heads memorise a small training set and collude on it.* With 147 feature dimensions
+  the pair's cost on fresh ledgers rose during training and reports drifted down: a ledger
+  both have seen before works like a surviving signal. Remedies used: few dimensions
+  (`--pca 8`, i.e. 8 principal directions per layer plus the three log-probability columns),
+  a small head (`--hidden 16`), and `--val-frac 0.2`, which keeps the heads from the step
+  where the pair's own cost on held-out training originals was lowest. With 8,000+ originals
+  on the GPU the full features may be fine; check that the held-out cost does not rise.
+- *Capacity was chosen after looking at test results on the hidden condition* (48, 24, 8 and 2
+  directions were tried; files in `results/trained/qwen05_cpu/exploratory/`). Say so.
+- *Perception noise shifts the equilibrium.* A head trained on true counts has a count error
+  of 0.39 to 0.45 and is charged 0.23 to 0.36 per round by the mechanism. With no stake the
+  payment-trained pair over-reports by about 0.4 (a safety margin against the floor, cheap
+  because the reporting charge is only 0.02). With stake 0.5 it withholds 0.16 to 0.20 of the
+  system's errors under both terms (exact, perfect perception: 0.20), 0.28 to 0.29 under the
+  floor only (0.30), and diverges under agreement only.
+- Full hidden-condition set (three seeds, both estimators) was running when this was written:
+  `train_hidden_analytic.json`, `train_hidden_reinforce.json`. Features for rec100 and plain
+  follow (about 23:20 and 23:55); then run the same command with `--only-conds rec100 plain`
+  and `--plans ceiling nostake main recog`.
+
 **For the session that has the key (written 21:35).** The session that wrote this could not
 see `RUNPOD_API_KEY` (added by Liam after it started) and may not start helper sessions. Liam
 asked to "test that it works for your purposes". Do this first, in order, and stop with
