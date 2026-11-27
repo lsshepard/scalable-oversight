@@ -1,0 +1,16 @@
+{
+ "model": "Qwen/Qwen2.5-0.5B-Instruct",
+ "adapter": "",
+ "layers": [
+  8,
+  16,
+  24
+ ],
+ "hidden": 896,
+ "p_genuine": [
+  0.6,
+  0.3,
+  0.1
+ ],
+ "seed": 0
+}

@@ -931,29 +931,62 @@ recognizable insertions 0.258 / 0.645 / 1.000; surviving signal 0.874; stake 0.1
 under both terms 0.053 / 0.109 / 0.388; no stake: both terms 0.015, plain or recognizable
 1.000.
 
-**Checked so far.** With synthetic features (perfect perception) the trained pairs reach the
-exact equilibrium in all five main conditions (`python experiments/exp9_trained.py synth`,
-`tests/test_trained.py`). The `reinforce` estimator drifted to harmless over-reporting on
-clean ledgers when eps was 0; eps = 0.02 was added for that reason and the check must be
-repeated. A CPU pilot with Qwen2.5-0.5B (frozen) is extracting features into
-`results/trained/pilot_qwen05_cpu/`; first sign: the model's own log-probability separates
-wrong from correct lines on the few ledgers looked at.
+**Checked so far (2026-11-27, 21:20).**
+- *Training code.* With synthetic features (perfect perception) the trained pairs reach the
+  exact equilibrium with both estimators, in the five main and three no-stake conditions
+  (`python experiments/exp9_trained.py synth --plans main nostake [--estimators reinforce]`,
+  `tests/test_trained.py`). Example, pay-only estimator: both terms 0.242 withheld per dirty
+  original against an exact 0.252; plain 1.498 against 1.510; agreement only still falling at
+  95. The pay-only estimator needs small exploration noise (sigma 0.05; with 0.3 the pair
+  keeps a margin of about 0.4 above the floor) and uses the payment of the un-noised report
+  as its baseline. The reporting charge eps = 0.02 was added to pin down one equilibrium.
+- *CPU pilot, Qwen2.5-0.5B frozen, 160 training originals* (`results/trained/pilot_qwen05_cpu/`,
+  features not in git). The model's own log-probability of the stated result separates wrong
+  from correct lines with AUC 0.993 (96% caught at 1% false alarms). Hidden states alone are
+  much weaker for that (linear probes: AUC 0.72 to 0.89). The tell (doubled space) is read
+  from hidden states almost perfectly (99.5% caught, best in the early layer). Heads trained
+  only on payments learn to count (hidden: about 0.75 per system error and 0.80 per inserted
+  error with a 27-dimensional feature reduction) and, with recognizable insertions, drop the
+  system's errors (0.2 to 0.3 per system error against 0.8 per inserted error with a
+  123-dimensional reduction). **But the pilot is too small**: count error 0.7 to 1.1, results
+  move with the feature reduction, and even a head trained on true counts shrinks its
+  weights. Nothing quantitative should be read from it.
+- A larger CPU extraction (1,500 training originals for hidden, rec100, plain; about 1 view
+  per second) runs as insurance into `results/trained/qwen05_cpu/`. Do not run other CPU work
+  next to it without `--threads 1`: contention made everything several times slower.
 
-**GPU.** `experiments/runpod_driver.py` (start pod, run jobs, fetch files, terminate) and
-`experiments/pod_server.py` (job server on the pod). The RunPod GraphQL API and the pod proxy
-answer from this container; `rest.runpod.io` is blocked. The key must be in the environment
-variable `RUNPOD_API_KEY` (never in chat); it was not present when this was written, and a
-new session may be needed to pick it up. Not yet tested end to end. Plan on the pod:
+**GPU.** `experiments/runpod_driver.py` (start pod, run jobs, fetch files, terminate),
+`experiments/pod_server.py` (job server on the pod), `experiments/pod_boot.sh` (start script
+the pod fetches from the public repository). The RunPod GraphQL API and the pod proxy answer
+from this container; `rest.runpod.io` is blocked; proxy requests time out after 100 seconds,
+so only small result files are fetched. The key must be in the environment variable
+`RUNPOD_API_KEY` (never in chat); it was not present in the session that wrote this, and a
+new session is needed to pick it up. **Not yet tested end to end**; the least certain step is
+whether the image runs the start command (`dockerArgs`); if the job server never answers,
+`log`/`jobs` will fail and the fallback is Jupyter on port 8888 of the same pod (password =
+the token in the state file). Plan on the pod:
 
-    python experiments/runpod_driver.py up            # then: wait
-    python experiments/runpod_driver.py run extract "python experiments/exp9_trained.py extract \
-        --model Qwen/Qwen2.5-1.5B-Instruct --conds hidden plain rec050 rec090 rec100 marker \
-        --n-train 8000 --n-test 2000 --batch 64 --out results/trained/qwen15"
-    python experiments/runpod_driver.py run train "python experiments/exp9_trained.py train \
-        --feats results/trained/qwen15 --plans main nostake recog stake marker --seeds 3 \
-        --estimators analytic reinforce"
-    python experiments/runpod_driver.py get results/trained/qwen15/train_main_nostake_recog_stake_marker.json <local>
-    python experiments/runpod_driver.py down          # ALWAYS terminate; `pods` lists what is running
+    python experiments/runpod_driver.py up            # then: wait   (prints $/h; default 48 GB cards first)
+    # 1. which model sees the errors best: small extraction and label-trained ceiling for each
+    python experiments/runpod_driver.py run pick "for m in Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen2.5-1.5B-Instruct Qwen/Qwen3-4B; do \
+        python experiments/exp9_trained.py extract --model $m --conds hidden --n-train 1500 --n-test 500 --batch 64 --out results/trained/pick_$(basename $m) && \
+        python experiments/exp9_trained.py train --feats results/trained/pick_$(basename $m) --plans ceiling nostake; done"
+    # 2. full extraction with the chosen model, then every plan
+    python experiments/runpod_driver.py run extract "python experiments/exp9_trained.py extract --model <chosen> \
+        --conds hidden plain rec050 rec090 rec100 marker --n-train 8000 --n-test 2000 --batch 64 --out results/trained/main"
+    python experiments/runpod_driver.py run train "python experiments/exp9_trained.py train --feats results/trained/main \
+        --plans main nostake recog stake marker ceiling --seeds 3 --estimators analytic reinforce"
+    # 3. the whole model trained on the payments (adapter), main contrast only
+    python experiments/runpod_driver.py run e2e "python experiments/exp9_trained.py e2e --model <chosen or 0.5B> --plans main nostake \
+        --only 'plain agreement' 'both terms' 'both terms, insertions recognizable' 'both terms, no stake' \
+        --out results/trained/main/e2e.json"
+    python experiments/runpod_driver.py log train ; python experiments/runpod_driver.py get results/trained/main/<file>.json <local>
+    python experiments/runpod_driver.py down          # ALWAYS terminate; `pods` lists what is running, `balance` the credit
+    python experiments/analyze_trained.py results/trained/main/train_*.json --out results/trained/main/analysis
+
+(The `train` step with `ceiling` in the plan list skips ceiling conditions whose features are
+missing only if those files exist; with `pick_*` folders only `hidden` exists, so use
+`--plans nostake` plus a ceiling restricted to hidden there if it errors.)
 
 **Still to build.** Supervised ceiling (head trained on true counts, `TrainConfig.supervised`),
 analysis and figures, one or two runs that train the whole model through an adapter on the
