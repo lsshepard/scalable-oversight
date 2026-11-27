@@ -187,7 +187,8 @@ class TrainConfig:
     weight_decay: float = 0.0
     estimator: str = "analytic"      # "analytic": gradient of the realised cost in the own report;
                                      # "reinforce": score-function estimate from sampled reports
-    sigma: float = 0.3               # exploration noise of the sampled reports ("reinforce")
+    sigma: float = 0.05              # exploration noise of the sampled reports ("reinforce"); with
+                                     # sigma = 0.3 the pair keeps a margin of about 0.4 above the floor
     eval_every: int = 250
     seed: int = 0
     supervised: bool = False         # train on the true count instead (perception ceiling)

@@ -228,7 +228,7 @@ def _train_args(p):
     p.add_argument("--steps", type=int, default=4000); p.add_argument("--seeds", type=int, default=1)
     p.add_argument("--estimators", nargs="+", default=["analytic"], choices=["analytic", "reinforce"])
     p.add_argument("--lr", type=float, default=2e-3); p.add_argument("--batch", type=int, default=512)
-    p.add_argument("--sigma", type=float, default=0.3); p.add_argument("--out", default="")
+    p.add_argument("--sigma", type=float, default=0.05); p.add_argument("--out", default="")
 
 
 if __name__ == "__main__":
