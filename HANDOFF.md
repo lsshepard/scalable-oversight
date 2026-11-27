@@ -745,3 +745,21 @@ Next, none of it started: a second model family (the most valuable addition), th
 red-team arm (d), a recognizability probe (b), and a decision on how the paper presents the
 role prompt.
 
+### 13.11 Proposal for a sharper experiment (2026-11-27, not approved)
+
+Liam judged experiment 1 "an ok initial experiment" that is "not very sharp for the paper"
+and asked whether to move to RL or run something sharper first. Claude's answer: a sharper
+prompt-based experiment first; RL later. The design, with exact predictions, is in
+**`docs/experiment2_design.md`**; the numbers come from `scratch_checks/pair_game_exact.py`.
+
+Two findings from that deliberation that matter beyond the proposal:
+- **Experiment 1 is over-determined.** In its setup the exact model says adjusted agreement
+  alone, or the floor alone, would already keep whole-number reporters honest. It therefore
+  does not show that the combination, or the hiding, matters.
+- With 1-3 insertions per copy and informed reviewers, each reward part alone has a clean
+  zero-cost exploit (subtract one; never report more than 3) and the pair has none under
+  both. Predicted concealment across ten conditions: 1.00, 0.80, 0.40, 0.00, then by
+  recognizability 0, 0, about 1, 1, and 0.80 / 0.00 with and without a surviving signal.
+
+Waiting on Liam: approval, and the decisions listed in section 8 of the design note.
+
