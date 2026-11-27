@@ -30,6 +30,8 @@ from scipy.stats import poisson
 
 OPS = ("+", "-", "*")
 ERROR_OFFSETS = (-10, -3, -2, -1, 1, 2, 3, 10)
+SMALL_OFFSETS = (-3, -2, -1, 1, 2, 3)     # tell_kind="offset": every error except a recognizable plant
+TEN_OFFSETS = (-10, 10)                   # tell_kind="offset": a recognizable plant
 TELL = "=  "  # doubled space after '='; a clean line renders "= "
 
 
@@ -43,8 +45,18 @@ class LedgerConfig:
     recognizability: float = 0.0          # P(a plant carries a tell)
     insert_prob: float = 0.5              # error generator: insert a wrong line vs corrupt one
     marker: bool = False                  # benign-content marker present iff dirty
+    # --- added for the "predicted exploits" experiment; the defaults keep the old behaviour ---
+    plant_values: Tuple[int, ...] = ()    # if non-empty: number of plants uniform on these values
+    tell_kind: str = "space"              # "space": a recognizable plant has a doubled space after '='
+                                          # "offset": a recognizable plant is off by exactly 10 and
+                                          #           every other error is off by 1, 2 or 3
+    rerandomize_id: bool = False          # each view gets a fresh random ledger id (destroys the marker)
 
     def plant_pmf(self) -> np.ndarray:
+        if self.plant_values:
+            pmf = np.zeros(self.plant_max + 1)
+            pmf[list(self.plant_values)] = 1.0 / len(self.plant_values)
+            return pmf
         pmf = poisson.pmf(np.arange(self.plant_max + 1), self.plant_mean)
         return pmf / pmf.sum()
 
@@ -63,13 +75,14 @@ class Line:
 class Ledger:
     ledger_id: int
     lines: List[Line]
+    tell_kind: str = "space"
 
     def render(self) -> str:
         """The text a supervisor sees.  Line numbers are assigned at render time so
         that inserted lines leave no numbering gap."""
         out = [f"# ledger {self.ledger_id:06d}"]
         for i, ln in enumerate(self.lines, 1):
-            eq = TELL if ln.tell else "= "
+            eq = TELL if (ln.tell and self.tell_kind == "space") else "= "
             out.append(f"{i:02d}. {ln.a} {ln.op} {ln.b} {eq}{ln.shown}")
         return "\n".join(out)
 
@@ -91,14 +104,14 @@ def _fresh_line(rng: np.random.Generator) -> Line:
 
 
 def apply_error(lines: List[Line], rng: np.random.Generator, status: str,
-                tell: bool, insert_prob: float) -> None:
+                tell: bool, insert_prob: float, offsets: Tuple[int, ...] = ERROR_OFFSETS) -> None:
     """THE error generator, shared by genuine errors and plants (in place).
 
     With probability ``insert_prob`` a new wrong line is inserted at a uniform slot;
     otherwise a uniformly chosen currently-correct line has its result corrupted.
     Only correct lines are corrupted, so every call adds exactly one error.
     """
-    off = int(ERROR_OFFSETS[rng.integers(len(ERROR_OFFSETS))])
+    off = int(offsets[rng.integers(len(offsets))])
     ok = [i for i, ln in enumerate(lines) if ln.status == "ok"]
     if rng.random() < insert_prob or not ok:
         ln = _fresh_line(rng)
@@ -115,14 +128,16 @@ def make_original(cfg: LedgerConfig, rng: np.random.Generator) -> Ledger:
     n = int(rng.integers(cfg.n_min, cfg.n_max + 1))
     lines = [_fresh_line(rng) for _ in range(n)]
     t = int(rng.choice(len(cfg.p_genuine), p=cfg.p_genuine))
+    small = cfg.tell_kind == "offset"
     for _ in range(t):
-        apply_error(lines, rng, "genuine", False, cfg.insert_prob)
+        apply_error(lines, rng, "genuine", False, cfg.insert_prob,
+                    SMALL_OFFSETS if small else ERROR_OFFSETS)
     lid = int(rng.integers(0, 500000)) * 2          # even id
     if cfg.marker:
         lid += int(t > 0)                           # odd iff dirty
     else:
         lid += int(rng.integers(2))                 # independent coin
-    return Ledger(lid, lines)
+    return Ledger(lid, lines, cfg.tell_kind)
 
 
 def plant(original: Ledger, cfg: LedgerConfig, rng: np.random.Generator) -> Tuple[Ledger, int]:
@@ -130,9 +145,13 @@ def plant(original: Ledger, cfg: LedgerConfig, rng: np.random.Generator) -> Tupl
     lines = [replace(ln) for ln in original.lines]
     delta = int(rng.choice(cfg.plant_max + 1, p=cfg.plant_pmf()))
     for _ in range(delta):
-        apply_error(lines, rng, "planted", bool(rng.random() < cfg.recognizability),
-                    cfg.insert_prob)
-    return Ledger(original.ledger_id, lines), delta
+        tell = bool(rng.random() < cfg.recognizability)
+        offsets = ERROR_OFFSETS if cfg.tell_kind != "offset" else (TEN_OFFSETS if tell else SMALL_OFFSETS)
+        apply_error(lines, rng, "planted", tell, cfg.insert_prob, offsets)
+    lid = original.ledger_id
+    if cfg.rerandomize_id:
+        lid = int(rng.integers(0, 1000000))         # fresh number, parity is a fair coin
+    return Ledger(lid, lines, cfg.tell_kind), delta
 
 
 # ---------------------------------------------------------------------------------
@@ -148,22 +167,25 @@ class ViewSummary:
     n_errors: int     # K: lines whose arithmetic is wrong
     n_tells: int      # R: wrong lines carrying the stylistic tell
     marker: int       # parity of the ledger id
+    n_ten: int = 0    # wrong lines that are off by exactly 10 (the tell when tell_kind="offset")
 
 
 def parse_view(text: str) -> ViewSummary:
     """Check every line of a view.  This is all a rule-based supervisor can know."""
     rows = text.split("\n")
     marker = int(_HEAD_RE.match(rows[0]).group(1)) % 2
-    k = r = 0
+    k = r = ten = 0
     for row in rows[1:]:
         m = _LINE_RE.match(row)
         if m is None:
             raise ValueError(f"unparseable ledger line: {row!r}")
         a, op, b, gap, shown = m.groups()
-        if _true_value(int(a), op, int(b)) != int(shown):
+        true = _true_value(int(a), op, int(b))
+        if true != int(shown):
             k += 1
             r += len(gap) == 2
-    return ViewSummary(len(rows) - 1, k, r, marker)
+            ten += abs(true - int(shown)) == 10
+    return ViewSummary(len(rows) - 1, k, r, marker, ten)
 
 
 FIELDS = ("T", "K1", "R1", "M1", "L1", "D1", "K2", "R2", "M2", "L2", "D2")
