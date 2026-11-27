@@ -763,3 +763,18 @@ Two findings from that deliberation that matter beyond the proposal:
 
 Waiting on Liam: approval, and the decisions listed in section 8 of the design note.
 
+### 13.12 Experiment 2 built and piloted (2026-11-27); full run NOT started
+
+Liam approved the direction, set budgets (Claude API for this experiment up to $80, RunPod
+GPU up to $40) and offered a RunPod key so that GPUs can be started and stopped from a
+session (not yet added; not needed for experiment 2). Built: insertion law 1-3, recognizable
+insertions (off by ten), re-randomized ledger number, pay rules `agree` and `floor`, the
+informed prompt family, whole-number reports, exact predictions (`hpo/pair_game.py`), runner
+(`experiments/exp7_exploits.py`), analysis (`experiments/analyze_exploits.py`). 58 tests pass.
+
+Three pilots, $10.33: see `docs/experiment2_design.md` section 9. Short version: reviewers
+reach the predicted exploit when it is obvious or needs no partner; the subtler ones appear
+only when a sentence assures coordination (`--coordinated`); where no exploit exists,
+coordinated reviewers try some anyway and lose points. Waiting on Liam for the three choices
+at the end of that section before any full run.
+
