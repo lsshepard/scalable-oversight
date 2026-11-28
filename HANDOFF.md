@@ -1099,3 +1099,16 @@ no stake" over-reports slightly (-0.16), which is the floor guarding against cou
 --plans main nostake --only 'plain agreement' 'both terms' 'both terms, insertions recognizable'
 'both terms, no stake'`, log in `/root/e2e.log`, results to `/root/main/e2e.json` (copy to
 `results/trained/main_out/` before `get`).
+
+**Update 03:55 (13.16 continued).**
+- *Adapter run, seed 0, done* (`results/trained/main/e2e.json`): withheld share plain 1.16
+  (exact 1.21), both terms 0.23 (0.20), recognizable 1.09 (1.21; system-error weight -0.00,
+  tell 1.00), no stake 0.01 (0.02; count error 0.03). Closer to exact than the frozen heads.
+- *The no-stake, recognizable departure* is held by the weight decay, not by too few steps:
+  20,000 steps give 0.24 to 0.26 (`train_nostake_r64_s20000.json`); without weight decay
+  0.84 against 1.01 (`train_nostake_wd0.json`, 1 seed), at the price of overfitting in "both
+  terms, no stake" (0.13 withheld, charge 0.49). Both runs at commit 958269d.
+- `REPORT_LLM.md` section 8 holds the write-up (sections 8 to 11 renumbered 9 to 12).
+- *Running*: adapter seed 1, same four conditions, started 03:56, about 5 h, appends to
+  `/root/main/e2e.json` (log `/root/e2e_s1.log`). Then: copy to `results/trained/main_out/`,
+  `get`, update the table in section 8, and `down`.

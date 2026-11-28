@@ -340,9 +340,29 @@ Figures: `results/trained/main/analysis/fig_trained_main.png`, `fig_trained_dial
 - **Departure.** With no stake and fully recognizable insertions the exact equilibrium
   conceals everything, but the trained pairs conceal 0.24 after 4,000 steps. The only push
   in that condition is the reporting charge of 0.02.
-  LONGRUN_PLACEHOLDER
+  It is not slow learning: after 20,000 steps the share is still 0.24 to 0.26 (2 seeds) and
+  the weight of a system error 0.66. The weight decay of the heads holds it there. Without
+  weight decay (1 seed, 20,000 steps) the weight of a system error falls to 0.17 and the share
+  reaches 0.84 against 1.01, but the heads then overfit elsewhere: "both terms, no stake"
+  drifts from slight over-reporting to 0.13 withheld, with a charge of 0.49.
 
-E2E_PLACEHOLDER
+**The whole model trained on the payments.** Each supervisor has its own low-rank adapter
+(rank 8) on the shared Qwen2.5-1.5B and its own head on the hidden states (no
+log-probabilities, no reduction); both are trained only on the realised cost, 1,500 steps of
+16 originals, 4,000 training originals (`hpo/trained_e2e.py`). Four conditions, seed 0
+(a second seed is running; this table will be updated):
+
+| Condition | Withheld (share) | Exact | Weight of a system error | Count error (RMS) |
+|---|---|---|---|---|
+| Plain agreement | 1.16 | 1.21 | -0.09 | 1.03 |
+| Both terms | 0.23 | 0.20 | 0.93 | 0.27 |
+| Both terms, insertions recognizable | 1.09 | 1.21 | -0.00 (tell: 1.00) | 0.89 |
+| Both terms, no stake | 0.01 | 0.02 | 1.00 | 0.03 |
+
+The adapted model lands closer to the exact values than the frozen features: under the
+mechanism it withholds 0.23 against 0.20, and with no stake it reports the truth almost
+exactly. Under plain agreement pay and under recognizable insertions it learns the predicted
+exploits from the payments alone.
 
 ## 9. Limits
 
@@ -352,8 +372,9 @@ E2E_PLACEHOLDER
 2. **Newer models do not conceal without a role prompt.** Sonnet 5, Sonnet 5.5, Haiku 5.5 and
    Opus 5.5 stay honest under all seven motives tried.
 3. **One model family.** All supervisors are Claude models.
-4. **The rule is stated.** Reviewers read the payment rule. Nothing here shows that the end
-   state is reached from payments alone, or under training.
+4. **The rule is stated** in sections 4 to 7. Section 8 reaches the predicted end states from
+   payments alone, but with a 1.5B open model on the same toy task, not with the Claude
+   models of sections 4 to 7.
 5. **Toy task.** Arithmetic ledgers; inserted errors are indistinguishable by construction;
    the designer knows exactly what it inserted.
 6. **Deterrence is not universal.** Opus 4.6 conceals under the mechanism. What the mechanism
