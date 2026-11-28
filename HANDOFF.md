@@ -1112,3 +1112,23 @@ no stake" over-reports slightly (-0.16), which is the floor guarding against cou
 - *Running*: adapter seed 1, same four conditions, started 03:56, about 5 h, appends to
   `/root/main/e2e.json` (log `/root/e2e_s1.log`). Then: copy to `results/trained/main_out/`,
   `get`, update the table in section 8, and `down`.
+
+**Update 10:45 (13.16 continued).**
+- *Seed 1 was stopped at about 05:00* to free the GPU for the pay-only run (both did not fit
+  in memory), then re-queued to start after it (job `s1next`, log `/root/e2e_s1.log`). It
+  started about 09:35 and should finish about 14:20 UTC.
+- *Pay-only (REINFORCE) adapter run, seed 0, done* (`--estimator reinforce --sigma 0.05`,
+  rows in `results/trained/main/e2e.json` with estimator "end to end, pay only"). Each
+  supervisor submits report + N(0, 0.05²) noise and learns from its payment minus the
+  payment of its un-noised report against the same partner report (`hpo/trained_e2e.py`).
+  Withheld share: plain 1.10 (exact 1.21), both terms 0.14 (0.20, but unconverged:
+  over-reports clean originals by 0.38, charge 1.57, count error 0.91), recognizable 1.10
+  (1.21; tell weight 0.99), no stake -3.89 (0.02: both supervisors drift up together to about
+  5 errors too many; nothing but the charge of 0.02 pushes back). Not retuned.
+- `REPORT_LLM.md` section 8 now opens with a summary table (frozen head / adapter gradient /
+  adapter pay only / exact), the figure `results/trained/main/analysis/fig_trained_summary.png`
+  (`experiments/fig_e2e.py`, rerun it after seed 1 lands) and a list of weak points.
+- GPU spend: $8.86 up to 10:30 UTC (credit $42.05 left). Next: when seed 1 is done, on the pod copy
+  `results/trained/main/e2e.json` (now a real directory, no longer a symlink) to
+  `results/trained/main_out/`, `get`, rerun `experiments/fig_e2e.py`, update the section 8
+  tables (they say seed 0), and `down`.

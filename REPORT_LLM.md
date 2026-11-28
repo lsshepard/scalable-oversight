@@ -284,6 +284,49 @@ follows the same rule. The full run needs three decisions from Liam (section 9 o
 
 ## 8. Experiment 3: supervisors trained on the payments
 
+**Summary.** Two supervisors built on Qwen2.5-1.5B are trained only on what the game pays
+them. No rule is stated and no label enters except through the stake. Share of the system's
+errors withheld (net), seed 0 for the adapter runs (a second seed of the gradient run is in
+progress), 3 seeds for the frozen heads:
+
+| Condition | Frozen head | Adapter, gradient | Adapter, pay only (RL) | Exact |
+|---|---|---|---|---|
+| Plain agreement | 1.19 | 1.16 | 1.10 | 1.21 |
+| Both terms (the mechanism) | 0.28 | 0.23 | 0.14 | 0.20 |
+| Both terms, insertions recognizable | 1.09 | 1.09 | 1.10 | 1.21 |
+| Both terms, no stake | -0.16 | 0.01 | -3.89 | 0.02 |
+
+Figure: `results/trained/main/analysis/fig_trained_summary.png` (script
+`experiments/fig_e2e.py`).
+
+- Under plain agreement pay every trained pair learns to withhold the system's errors, as
+  predicted, without being told the rule.
+- The mechanism brings concealment down to near the exact value (0.14 to 0.28 against 0.20).
+- When inserted errors carry a tell, every pair reports exactly the inserted errors (weight
+  about 1.0 on them, about 0 on the system's errors): the predicted exploit.
+- Training the whole model (adapter) with the gradient comes closest to the exact values in
+  all four conditions.
+
+**What is weak.**
+1. *The pay-only (RL) adapter run is not converged under the mechanism.* Its 0.14 is not a
+   better result than 0.23: it comes from over-reporting (clean originals are reported 0.38
+   errors too high, charge 1.57 per round against 0.07 for the gradient run, count error
+   0.91 against 0.27), and the share swings between -0.02 and 0.44 over the last 600 steps.
+   The weight of a system error reaches 0.62 (gradient run: 0.93).
+2. *The pay-only run fails with no stake.* Both supervisors drift up together to about 5
+   errors too many per view (count error 5.1). Without the stake the only thing against
+   joint over-reporting is the charge of 0.02 per reported error, and a noisy payment signal
+   does not see it. The exact equilibrium (0.02) is not reached. I report this as it came
+   out, with no retuning.
+3. *One seed for the adapter runs* (a second gradient seed is running; no second RL seed).
+4. *Departure in the frozen heads*: with no stake and recognizable insertions they withhold
+   0.24 against 1.01, held there by weight decay (details below).
+5. *Small model, toy task.* A 1.5B open model on arithmetic ledgers; the frozen model already
+   sees wrong lines almost perfectly (probe AUC 0.999), so this tests the incentives, not
+   hard perception.
+6. *Systematic small bias.* Under the mechanism the frozen heads withhold 0.06 to 0.08 more
+   than exact; under recognizable insertions all pairs withhold about 0.1 less than exact.
+
 **Question.** Sections 4 to 7 state the payment rule and give a goal. Here nothing is stated:
 two supervisors are trained, each on its own realised payment, with the other's report taken
 as given. Does training alone reach the collusive end state under plain agreement pay, and
@@ -349,20 +392,27 @@ Figures: `results/trained/main/analysis/fig_trained_main.png`, `fig_trained_dial
 **The whole model trained on the payments.** Each supervisor has its own low-rank adapter
 (rank 8) on the shared Qwen2.5-1.5B and its own head on the hidden states (no
 log-probabilities, no reduction); both are trained only on the realised cost, 1,500 steps of
-16 originals, 4,000 training originals (`hpo/trained_e2e.py`). Four conditions, seed 0
-(a second seed is running; this table will be updated):
+16 originals, 4,000 training originals (`hpo/trained_e2e.py`). Two estimators: the gradient
+of the realised cost, and pay only (REINFORCE): each supervisor submits its report plus
+Gaussian noise (sd 0.05) and learns only from the payment it receives, against the payment
+its un-noised report would have earned. Four conditions, seed 0 (gradient / pay only):
 
 | Condition | Withheld (share) | Exact | Weight of a system error | Count error (RMS) |
 |---|---|---|---|---|
-| Plain agreement | 1.16 | 1.21 | -0.09 | 1.03 |
-| Both terms | 0.23 | 0.20 | 0.93 | 0.27 |
-| Both terms, insertions recognizable | 1.09 | 1.21 | -0.00 (tell: 1.00) | 0.89 |
-| Both terms, no stake | 0.01 | 0.02 | 1.00 | 0.03 |
+| Plain agreement | 1.16 / 1.10 | 1.21 | -0.09 / -0.01 | 1.03 / 0.99 |
+| Both terms | 0.23 / 0.14 | 0.20 | 0.93 / 0.62 | 0.27 / 0.91 |
+| Both terms, insertions recognizable | 1.09 / 1.10 | 1.21 | -0.00 / -0.01 (tell: 1.00 / 0.99) | 0.89 / 0.89 |
+| Both terms, no stake | 0.01 / -3.89 | 0.02 | 1.00 / 0.79 | 0.03 / 5.13 |
 
-The adapted model lands closer to the exact values than the frozen features: under the
-mechanism it withholds 0.23 against 0.20, and with no stake it reports the truth almost
-exactly. Under plain agreement pay and under recognizable insertions it learns the predicted
-exploits from the payments alone.
+With the gradient the adapted model lands closer to the exact values than the frozen
+features: under the mechanism it withholds 0.23 against 0.20, and with no stake it reports
+the truth almost exactly. Pay only reaches the two exploits (plain agreement, recognizable
+insertions) as fast as the gradient, by step 300. Under the mechanism it first over-reports
+heavily (charge 6.4 at step 150), then settles into an unconverged state with over-reporting
+on clean originals (0.38 too high). With no stake both supervisors over-report together and
+stay there (5 errors too many per view at step 1,500). Training on the payment alone works
+where the payment gradient is strong and fails where the only signal is the charge of 0.02.
+Run time 1.2 h per condition on an A6000.
 
 ## 9. Limits
 
@@ -417,7 +467,10 @@ exploits from the payments alone.
 | Confirmatory comparison: Sonnet 4.6 $11.86, Opus 4.6 $22.23, Opus 5 $14.87 | $48.96 |
 | Format calibration cells that were discarded | about $0.75 |
 
-Since the $80 target was set (experiment 2 pilots onward): $84.44. No GPU was rented.
+Since the $80 target was set (experiment 2 pilots onward): $84.44.
+
+GPU for experiment 3 (RunPod A6000, $0.69/h): $8.86 up to 10:30 UTC on 28 Nov; the running
+second seed adds about $3.5.
 
 ## 12. Reproduce
 
