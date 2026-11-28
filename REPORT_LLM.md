@@ -286,14 +286,15 @@ follows the same rule. The full run needs three decisions from Liam (section 9 o
 
 **Summary.** Two supervisors built on Qwen2.5-1.5B are trained only on what the game pays
 them. No rule is stated and no label enters except through the stake. Share of the system's
-errors withheld (net), seed 0 for the adapter runs (a second seed of the gradient run is in
-progress), 3 seeds for the frozen heads:
+errors withheld (net). Frozen heads: mean of 3 seeds. Adapter, gradient: mean of seeds 0 and 1
+(seed 1: 1.10, 0.27, 1.12, 0.02). Adapter, pay only: seed 0. A third gradient seed and two more
+pay-only seeds are running; this table will then hold 3 seeds per cell:
 
 | Condition | Frozen head | Adapter, gradient | Adapter, pay only (RL) | Exact |
 |---|---|---|---|---|
-| Plain agreement | 1.19 | 1.16 | 1.10 | 1.21 |
-| Both terms (the mechanism) | 0.28 | 0.23 | 0.14 | 0.20 |
-| Both terms, insertions recognizable | 1.09 | 1.09 | 1.10 | 1.21 |
+| Plain agreement | 1.19 | 1.13 | 1.10 | 1.21 |
+| Both terms (the mechanism) | 0.28 | 0.25 | 0.14 | 0.20 |
+| Both terms, insertions recognizable | 1.09 | 1.11 | 1.10 | 1.21 |
 | Both terms, no stake | -0.16 | 0.01 | -3.89 | 0.02 |
 
 Figure: `results/trained/main/analysis/fig_trained_summary.png` (script
@@ -318,7 +319,8 @@ Figure: `results/trained/main/analysis/fig_trained_summary.png` (script
    joint over-reporting is the charge of 0.02 per reported error, and a noisy payment signal
    does not see it. The exact equilibrium (0.02) is not reached. I report this as it came
    out, with no retuning.
-3. *One seed for the adapter runs* (a second gradient seed is running; no second RL seed).
+3. *Few seeds for the adapter runs*: two for the gradient (they agree within 0.06), one for pay
+   only. More are running.
 4. *Departure in the frozen heads*: with no stake and recognizable insertions they withhold
    0.24 against 1.01, held there by weight decay (details below).
 5. *Small model, toy task.* A 1.5B open model on arithmetic ledgers; the frozen model already
