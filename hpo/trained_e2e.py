@@ -31,6 +31,10 @@ class E2EConfig:
     seed: int = 0
     layers: Optional[Sequence[int]] = None      # hidden-state layers used as features
     supervised: bool = False                    # train on the true count instead (ceiling)
+    estimator: str = "analytic"                 # "analytic": gradient of the realised cost in the own
+                                                # report; "reinforce": each supervisor submits a noisy
+                                                # report and learns only from the payment it receives
+    sigma: float = 0.05                         # exploration noise of the submitted reports ("reinforce")
 
 
 class NormedHead(nn.Module):
@@ -149,11 +153,23 @@ def train_e2e(model_name: str, train: dict, test: dict, rw: Reward, cfg: E2EConf
         D = [tr["D"][idx, 0].to(device), tr["D"][idx, v2].to(device)]
         K = [tr["K"][idx, 0].to(device), tr["K"][idx, v2].to(device)]
         other = [reports(i, tr_views[0 if i == 0 else v2], idx, False).detach() for i in range(2)]
+        if cfg.estimator == "reinforce":   # submitted (noisy) reports of both supervisors
+            sub = [other[i] + cfg.sigma * torch.randn(other[i].shape, generator=gen).to(device) for i in range(2)]
         opt.zero_grad(set_to_none=True)
         for i in range(2):
             F = reports(i, tr_views[0 if i == 0 else v2], idx, True)
-            loss = ((F - K[i]) ** 2).mean() if cfg.supervised else \
-                cost_t(rw, F, other[1 - i], D[i], D[1 - i], T)[0].mean()
+            if cfg.supervised:
+                loss = ((F - K[i]) ** 2).mean()
+            elif cfg.estimator == "reinforce":
+                # Score-function (REINFORCE) estimate from the payment alone. Baseline: the payment
+                # the un-noised report would have earned against the same submitted partner
+                # report, as in hpo/trained.py.
+                pay = -cost_t(rw, sub[i], sub[1 - i], D[i], D[1 - i], T)[0]
+                base = -cost_t(rw, F.detach(), sub[1 - i], D[i], D[1 - i], T)[0]
+                logp = -((sub[i] - F) ** 2) / (2 * cfg.sigma ** 2)
+                loss = -((pay - base) * logp).mean()
+            else:
+                loss = cost_t(rw, F, other[1 - i], D[i], D[1 - i], T)[0].mean()
             loss.backward()
         torch.nn.utils.clip_grad_norm_(params(0) + params(1), 1.0)
         opt.step(); sched.step()

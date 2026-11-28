@@ -307,7 +307,8 @@ def cmd_e2e(args):
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
     out = pathlib.Path(args.out); out.parent.mkdir(parents=True, exist_ok=True)
     rows = json.loads(out.read_text()) if out.exists() else []
-    done = {(r["label"], r["seed"]) for r in rows}
+    est = "end to end" + (", pay only" if args.estimator == "reinforce" else "")
+    done = {(r["label"], r["seed"], r["estimator"]) for r in rows}
     plan = [r for name in args.plans for r in PLANS[name] if not args.only or any(o == r[0] for o in args.only)]
     for label, cond, kind, b, eps in plan:
         sup = kind == "supervised"
@@ -316,15 +317,16 @@ def cmd_e2e(args):
         train = sample_views(ledger_cfg(cond), args.n_train, args.seed, plain=cond == "plain")
         test = sample_views(ledger_cfg(cond), args.n_test, args.seed + 1, plain=cond == "plain")
         for seed in range(args.seeds):
-            if (label, seed) in done:
+            if (label, seed, est) in done:
                 continue
-            print(f"== {label} | views: {cond} | {kind} b={b:g} eps={eps:g} | end to end, seed {seed}", flush=True)
+            print(f"== {label} | views: {cond} | {kind} b={b:g} eps={eps:g} | {est}, seed {seed}", flush=True)
             t0 = time.time()
             cfg = E2EConfig(steps=args.steps, batch=args.batch, seed=seed, rank=args.rank, supervised=sup,
-                            lr_adapter=args.lr_adapter, eval_every=args.eval_every, n_eval=args.n_test)
+                            lr_adapter=args.lr_adapter, eval_every=args.eval_every, n_eval=args.n_test,
+                            estimator=args.estimator, sigma=args.sigma)
             res = train_e2e(args.model, train, test, rw, cfg, device, log=lambda m: print(m, flush=True))
             fin = res["final"]
-            rows.append(dict(label=label, cond=cond, kind=kind, b=b, eps=eps, estimator="end to end", seed=seed,
+            rows.append(dict(label=label, cond=cond, kind=kind, b=b, eps=eps, estimator=est, seed=seed, sigma=args.sigma,
                              model=args.model, seconds=time.time() - t0, exact=ex,
                              final={k: v for k, v in fin.items() if k != "shading"}, shading=fin["shading"],
                              shading_rms_gap=shading_distance(fin["shading"], ex["shading"]) if ex.get("bounded") else float("nan"),
@@ -377,6 +379,8 @@ if __name__ == "__main__":
     ee.add_argument("--seeds", type=int, default=1); ee.add_argument("--seed", type=int, default=0)
     ee.add_argument("--rank", type=int, default=8); ee.add_argument("--lr-adapter", type=float, default=2e-4)
     ee.add_argument("--eval-every", type=int, default=150)
+    ee.add_argument("--estimator", default="analytic", choices=["analytic", "reinforce"])
+    ee.add_argument("--sigma", type=float, default=0.05)
     ee.add_argument("--device", default=""); ee.add_argument("--out", required=True)
     for q in (e, sy, tr, ee, pr):
         q.add_argument("--threads", type=int, default=0, help="CPU threads for torch (0 = default)")
