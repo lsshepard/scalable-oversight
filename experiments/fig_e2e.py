@@ -28,6 +28,8 @@ def load():
             frozen[r["label"]] = (float(r["net_share_mean"]), float(r["exact_net_share"] or "nan"))
     e2e = defaultdict(list)
     for r in json.load(open(ROOT / "e2e.json")):
+        if abs(r["eps"] - 0.02) > 1e-9 or r.get("alternate") or "alternating" in r["estimator"]:
+            continue                      # diagnostics (other charge, alternating updates) are not in the main table
         e2e[(r["label"], "reinforce" if "pay only" in r["estimator"] else "analytic")].append(r)
     return frozen, e2e
 

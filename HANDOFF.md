@@ -1132,3 +1132,29 @@ no stake" over-reports slightly (-0.16), which is the floor guarding against cou
   `results/trained/main/e2e.json` (now a real directory, no longer a symlink) to
   `results/trained/main_out/`, `get`, rerun `experiments/fig_e2e.py`, update the section 8
   tables (they say seed 0), and `down`.
+
+**Update 14:40 (13.16 continued): parallel pods.** Agreed with Liam: 3 seeds for every adapter
+cell, plus two exploratory diagnostics on "both terms, no stake" with the pay-only estimator
+(the pair drifted to joint over-reporting there). One run fills a 48 GB card, so one run per pod.
+The account allows 8 GPUs at once.
+
+| Pod | State file | Job, output in `results/trained/main_out/` | What |
+|---|---|---|---|
+| 1o9tzb54e1idsm (A6000) | default | `s1next` → `results/trained/main/e2e.json`; then `c05` → `e2e_c05.json` | gradient seed 1; then charge 0.05, seeds 0, 1 |
+| fjjp1rxn33xoy6 | `~/.runpod_pods/p1.json` | `g2a` → `e2e_g2a.json` | gradient seed 2: plain, both terms |
+| keyv5i7h4s4uot | p2 | `g2b` | gradient seed 2: recognizable, no stake |
+| bc8q0635ec41vm | p3 | `r1a` | pay only seed 1: plain, both terms |
+| fjsk50d9hra6i1 | p4 | `r1b` | pay only seed 1: recognizable, no stake |
+| 4wqje4hzp2vbt8 | p5 | `r2a` | pay only seed 2: plain, both terms |
+| h7o8rck51tvy8f | p6 | `r2b` | pay only seed 2: recognizable, no stake |
+| mueg2zjricafmv | p7 | `alt` → `e2e_alt.json`; then `c20` → `e2e_c20.json` | alternating updates (blocks of 50 steps), seeds 0, 1; then charge 0.2, seed 0 |
+
+p1 to p7 are A40 at $0.59/h, started 14:25 to 14:33 UTC; about 1.4 h per condition, so p1 to p6
+finish about 17:30, the old pod about 18:15, p7 about 18:50. Use
+`RUNPOD_STATE=~/.runpod_pods/pN.json python experiments/runpod_driver.py ...` per pod. **Every
+pod must be terminated** (`down`, or `down --pod <id>` if a state file is lost); check `pods`.
+New options of `exp9_trained.py e2e`: `--alternate N`, `--eps X`, `--seed-ids ...`.
+Exact share withheld in "both terms, no stake" by charge (solver): 0.02 → 0.015, 0.05 → 0.039,
+0.1 → 0.077, 0.2 → 0.154, 0.5 → 0.386 (linear, about 0.77 per unit of charge). The charge 0.2
+run (1 seed) is an addition of mine beyond what was agreed (0.05 alone is only 2.5 times the
+slope). `experiments/fig_e2e.py` ignores the diagnostic rows.
