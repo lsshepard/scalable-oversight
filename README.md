@@ -16,6 +16,8 @@ everything can be computed exactly. Results, tables and verdicts: **[REPORT.md](
 
 Experiments with language models as supervisors (2026-11-26/27), including the comparison
 without a role prompt on Claude Opus 5, Opus 4.6 and Sonnet 4.6: **[REPORT_LLM.md](REPORT_LLM.md)**.
+Supervisors trained on their payments, with perfect perception and on a language model's
+activations (2026-11-27/28): **[REPORT_TRAINED.md](REPORT_TRAINED.md)**.
 State of the project and what is open: `HANDOFF.md`, section 13.
 
 ## Layout

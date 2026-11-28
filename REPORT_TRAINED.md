@@ -1,7 +1,8 @@
 # Supervisors trained on their payments: results
 
-Status 2026-11-27, midnight. Written by Claude. Work in progress: plain agreement on the
-language model's features is still running. Choices that Liam has not confirmed are in section 7.
+Status 2026-11-28, 00:20. Written by Claude. The three main conditions on the language
+model's features are complete; three further conditions (50% and 90% recognizable, surviving
+signal) are still extracting. Choices that Liam has not confirmed are in section 7.
 The experiments with prompted language models are in `REPORT_LLM.md`.
 
 ## 1. Summary
@@ -32,16 +33,19 @@ activations on the ledger text; hidden insertions; 1,500 training ledgers; three
 
 | Condition | Share withheld: trained | Exact, perfect perception |
 |---|---|---|
-| Both terms, private gain 0.5 | 0.19 [0.17, 0.20] | 0.20 |
-| Floor only, private gain 0.5 | 0.30 [0.28, 0.33] | 0.30 |
+| Plain agreement, private gain 0.5 | 1.19 | 1.21 |
 | Agreement only, private gain 0.5 | reports fall without limit | no bound |
+| Floor only, private gain 0.5 | 0.30 [0.28, 0.33] | 0.30 |
+| Both terms, private gain 0.5 | 0.19 [0.17, 0.20] | 0.20 |
+| Both terms, insertions carry a tell, private gain 0.5 | 0.48 [0.43, 0.54] | 0.48 when 83% are recognizable, 1.21 when all are |
+| Plain agreement, no private gain | 1.01 | 1.01 |
 | Both terms, no private gain | -0.40 [-0.47, -0.36] (over-reports) | 0.015 |
 
 Trained with no label, a supervisor adds 0.97 to its report for each error of the audited
 system and 0.94 for each inserted error. When every inserted error carries a tell, the share
 withheld at a private gain of 0.5 rises from 0.19 to between 0.49 and 0.90, depending on how
 much of the tell the supervisor's features expose (79% to 99.8%), close to the exact curve
-(section 4.2). Plain agreement on these features: pending.
+(section 4.2). The standard supervisor reads 83% of the tells.
 
 **What is weak.** With perfect perception this is close to the simulation in `REPORT.md`.
 The language-model version uses a small frozen model on CPU; its perception is noisy (count
@@ -216,7 +220,23 @@ along the curve the theory gives, and with nearly full access it leaves out most
 when it gains nothing from concealment beyond a negligible reporting charge. All numbers are
 on fresh ledgers, so memory of the training copies (4.3) cannot produce them.
 
-Plain agreement on these features: pending.
+### 4.2b Plain agreement
+
+No insertion; both supervisors read the same ledger. Three seeds.
+
+| Condition | Estimator | Share withheld: trained | Exact | Weight of a system error | Charge per round |
+|---|---|---|---|---|---|
+| Trained on true counts (ceiling) | | 0.07 [0.06, 0.08] | | 0.86 | 0.02 |
+| No private gain | analytic | 1.008 | 1.008 | 0.00 | 0.000 |
+| | reinforce | 0.984 | 1.008 | 0.00 | 0.000 |
+| Private gain 0.5 | analytic | 1.194 | 1.208 | -0.15 | 0.029 |
+| | reinforce | 1.193 | 1.208 | -0.17 | 0.029 |
+
+Under plain agreement the supervisors learn to report nothing about the system's errors, at
+no charge, even when the only reason to report less is a reporting charge of 0.02. The same
+features support counting: a head trained on the true counts reaches a count error of 0.27.
+
+Figure with all main conditions: `results/trained/qwen05_cpu/analysis/fig_trained_main.png`.
 
 ### 4.3 A finding from the first attempt: reused copies stop being hidden
 

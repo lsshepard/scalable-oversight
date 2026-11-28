@@ -82,12 +82,24 @@ def _save(fig, path):
     fig.savefig(path, dpi=200, facecolor=SURFACE); fig.savefig(path.with_suffix(".pdf"), facecolor=SURFACE)
 
 
-def fig_main(groups, path, estimator):
+def fig_main(groups, path, estimator, tell_recall=None):
     """Left: no stake (a reporting charge of 0.02 is the only reason to report less).
-    Right: stake 0.5.  Shares above 1 (reports below zero) are drawn at 1; the table has them."""
+    Right: stake 0.5.  Shares above 1 (reports below zero) are drawn at 1; the table has them.
+    `tell_recall`: share of tells the supervisor's features expose; if given, the exact
+    equilibrium for that share of recognizable insertions is drawn as a dashed line."""
     import matplotlib; matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
+    partial = {}
+    if tell_recall:
+        import sys
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+        from hpo.ledger import LedgerConfig
+        from hpo.mechanism import Reward
+        from hpo.trained import exact_prediction
+        for b in (0.0, 0.5):
+            partial[b] = exact_prediction(LedgerConfig(p_genuine=(0.6, 0.3, 0.1), recognizability=float(tell_recall)),
+                                          Reward(beta=1, lam=1, b=b, eps=0.02))["net_share"]
     panels = [("No private gain from concealment",
                ["plain agreement, no stake", "both terms, no stake", "both terms, no stake, insertions recognizable"],
                ["Plain\nagreement", "Both terms\n(the mechanism)", "Both terms,\ninsertions\nrecognizable"]),
@@ -116,13 +128,20 @@ def fig_main(groups, path, estimator):
             if not unbounded:
                 ax.plot([i - 0.27, i + 0.27], [clip(g["exact"]["net_share"])] * 2, color=ORANGE, linewidth=2.2, zorder=4,
                         solid_capstyle="round")
+            if partial and g["cond"] == "rec100":
+                ax.plot([i - 0.27, i + 0.27], [clip(partial[g["b"]])] * 2, color=ORANGE, linewidth=2.0, zorder=4,
+                        linestyle=(0, (2.2, 1.6)))
         ax.set_xticks(range(len(present))); ax.set_xticklabels([s for _, s in present], fontsize=8, color=INK2)
         ax.set_ylim(0, 1.14); ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0]); ax.set_xlim(-0.6, len(present) - 0.4)
         ax.set_title(title, fontsize=9.5, color=INK, loc="left", pad=8)
     axes[0][0].set_ylabel("Share of the system's errors\nwithheld from the report", fontsize=9, color=INK2)
-    fig.legend(handles=[Line2D([0], [0], color=BLUE, linewidth=6, label="trained pair"),
-                        Line2D([0], [0], color=ORANGE, linewidth=2.2, label="exact equilibrium, perfect perception")],
-               loc="upper right", bbox_to_anchor=(0.995, 1.0), ncol=2, frameon=False, fontsize=8.5, labelcolor=INK2)
+    handles = [Line2D([0], [0], color=BLUE, linewidth=6, label="trained pair"),
+               Line2D([0], [0], color=ORANGE, linewidth=2.2, label="exact equilibrium, perfect perception")]
+    if partial:
+        handles.append(Line2D([0], [0], color=ORANGE, linewidth=2.0, linestyle=(0, (2.2, 1.6)),
+                              label=f"exact when {100 * tell_recall:.0f}% of insertions are recognizable (the share of tells this supervisor reads)"))
+    fig.legend(handles=handles, loc="upper right", bbox_to_anchor=(0.995, 1.0), ncol=len(handles), frameon=False, fontsize=8,
+               labelcolor=INK2)
     fig.tight_layout(rect=(0, 0, 1, 0.93)); _save(fig, path)
 
 
@@ -245,11 +264,16 @@ if __name__ == "__main__":
     ap.add_argument("files", nargs="+"); ap.add_argument("--out", required=True)
     ap.add_argument("--estimator", default="analytic")
     ap.add_argument("--sweeps", default="", help="folder with tell_sweep.json (adds fig_trained_tell)")
+    ap.add_argument("--directions", type=int, default=8, help="supervisor size of the main runs (for the tell share)")
     a = ap.parse_args()
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
     groups = load(a.files)
     print(write_table(groups, out))
-    fig_main(groups, out / "fig_trained_main.png", a.estimator)
+    recall = None
+    if a.sweeps and (pathlib.Path(a.sweeps) / "tell_sweep.json").exists():
+        ts = json.loads((pathlib.Path(a.sweeps) / "tell_sweep.json").read_text())
+        recall = float(np.mean([r["tell_recall"] for r in ts if r["k"] == a.directions]))
+    fig_main(groups, out / "fig_trained_main.png", a.estimator, recall)
     fig_dials(groups, out / "fig_trained_dials.png", a.estimator)
     fig_weights(groups, out / "fig_trained_weights.png", a.estimator)
     if a.sweeps:

@@ -1032,3 +1032,24 @@ analysis and figures, one or two runs that train the whole model through an adap
 payments, the write-up in `REPORT_LLM.md`. Main risk: the frozen small model does not see
 arithmetic errors crisply enough; remedies are a larger model (Qwen3-4B is ungated) or the
 adapter runs.
+
+### 13.16 Trained supervisors: state at 00:20 on 2026-11-28 (CPU only; the GPU never ran)
+
+Write-up: **`REPORT_TRAINED.md`**. Results: `results/trained/perfect_perception/` (17
+conditions, three seeds, both estimators; trained pairs on the exact equilibrium) and
+`results/trained/qwen05_cpu/` (frozen Qwen2.5-0.5B features, 1,500 training ledgers per
+condition): plain agreement 1.19 withheld (exact 1.21); agreement only without limit; floor
+only 0.30 (0.30); both terms 0.19 (0.20); insertions with a tell 0.48, which is the exact
+value for the 83% of tells the standard supervisor reads, rising to 0.90 when it reads 99.8%
+(`exp9_sweeps.py`, `fig_trained_tell`); no private gain: over-reporting by about 0.4 under
+both terms, everything withheld under plain agreement. Reused training copies are memorised
+by a large supervisor, which then behaves as under recognizable insertions on those copies
+(REPORT_TRAINED 4.3). Features (`*.npz`) are not in git; extraction of rec090, marker and
+rec050 was still running in the old session's container and is lost if that session ends.
+
+Liam created a RunPod key (GraphQL read and write) and saved it in the environment, but the
+session that did this work could not see it and was not allowed to start a helper session.
+No pod was ever started; no GPU money was spent. A session that has the key can still run
+the larger version (13.15), use `--val-frac 0.2`, and should draw fresh insertions per step
+if it trains the model itself. Claude API spend is unchanged at $84.44; the $5 to $10 Opus 5
+control with recognizable insertions was offered twice and not answered.
