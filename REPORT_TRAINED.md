@@ -204,6 +204,13 @@ With no private gain the exact prediction stays below 0.09 up to 97% recognizabl
 to 1.0 at 100%. The trained pairs give -0.09, -0.10 and -0.09 for 2, 8 and 24 directions and
 0.37 (0.44, 0.30) for 48.
 
+Control, hidden insertions at the same four supervisor sizes (private gain 0.5): 0.18, 0.19,
+0.26 and 0.37 withheld, with a system error and an inserted error weighted alike at every
+size (0.91 / 0.86, 0.90 / 0.86, 0.87 / 0.84, 0.82 / 0.77). The rise at the largest size comes
+with a larger count error and a higher charge, and the two weights stay together.
+Figure: `results/trained/qwen05_cpu/analysis/fig_trained_tell.png`
+(`experiments/exp9_sweeps.py`).
+
 So the more of the tell a supervisor can read, the more of the system's errors it leaves out,
 along the curve the theory gives, and with nearly full access it leaves out most of them even
 when it gains nothing from concealment beyond a negligible reporting charge. All numbers are
@@ -305,6 +312,8 @@ the result on ledgers that were not used in training.
     python experiments/exp9_trained.py train --feats results/trained/qwen05_cpu --plans ceiling nostake main stake \
         --pca 8 --hidden 16 --val-frac 0.2 --batch 256 --seeds 3 --estimators analytic \
         --out results/trained/qwen05_cpu/train_hidden_analytic.json
-    python experiments/analyze_trained.py results/trained/qwen05_cpu/train_*.json --out results/trained/qwen05_cpu/analysis
+    python experiments/exp9_sweeps.py results/trained/qwen05_cpu
+    python experiments/analyze_trained.py results/trained/qwen05_cpu/train_*.json --out results/trained/qwen05_cpu/analysis \
+        --sweeps results/trained/qwen05_cpu
 
     # GPU (needs RUNPOD_API_KEY): see HANDOFF.md section 13.15

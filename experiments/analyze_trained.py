@@ -191,10 +191,60 @@ def fig_weights(groups, path, estimator):
     fig.tight_layout(rect=(0, 0, 1, 0.93)); _save(fig, path)
 
 
+def fig_tell(folder, path):
+    """Recognizable insertions, private gain 0.5: share withheld against the share of tells the
+    supervisor's features expose, with the exact curve and hidden insertions at the same sizes."""
+    import sys
+    import matplotlib; matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+    from hpo.ledger import LedgerConfig
+    from hpo.mechanism import Reward
+    from hpo.trained import exact_prediction
+    folder = pathlib.Path(folder)
+    if not (folder / "tell_sweep.json").exists():
+        return
+    tell = [r for r in json.loads((folder / "tell_sweep.json").read_text()) if r["label"] == "private gain 0.5"]
+    ctrl = [r for r in json.loads((folder / "capacity_sweep_hidden.json").read_text()) if r["label"] == "private gain 0.5"] \
+        if (folder / "capacity_sweep_hidden.json").exists() else []
+    ks = sorted({r["k"] for r in tell})
+    x = [100 * np.mean([r["tell_recall"] for r in tell if r["k"] == k]) for k in ks]
+    ps = np.concatenate([np.linspace(0.70, 0.95, 11), np.linspace(0.96, 1.0, 9)])
+    ex = [exact_prediction(LedgerConfig(p_genuine=(0.6, 0.3, 0.1), recognizability=float(p)), Reward(beta=1, lam=1, b=0.5, eps=0.02))
+          for p in ps]
+    fig, axes = plt.subplots(1, 2, figsize=(9.4, 3.6))
+    ax = axes[0]; _style(ax)
+    ax.plot(100 * ps, [e["net_share"] for e in ex], color=ORANGE, linewidth=2, zorder=2, label="exact equilibrium")
+    for k, xi in zip(ks, x):
+        ys = [r["net_share"] for r in tell if r["k"] == k]
+        ax.plot([xi] * len(ys), ys, linestyle="none", marker="o", markersize=6.5, color=BLUE, markeredgecolor=SURFACE,
+                markeredgewidth=1.2, zorder=4, label="trained pair, insertions carry a tell" if k == ks[0] else None)
+        yc = [r["net_share"] for r in ctrl if r["k"] == k]
+        if yc:
+            ax.plot([xi] * len(yc), yc, linestyle="none", marker="o", markersize=6, markerfacecolor=SURFACE, markeredgecolor=AQUA,
+                    markeredgewidth=1.6, zorder=3, label="same supervisor, hidden insertions" if k == ks[0] else None)
+    ax.set_xlabel("Share of tells the supervisor's features expose (%)", fontsize=9, color=INK2)
+    ax.set_ylabel("Share of the system's errors\nwithheld from the report", fontsize=9, color=INK2)
+    ax.set_xlim(72, 101.5); ax.set_ylim(0, 1.3)
+    ax.legend(frameon=False, fontsize=8, labelcolor=INK2, loc="upper left")
+    ax = axes[1]; _style(ax)
+    for j, (key, color, label) in enumerate((("w_system", BLUE, "an error of the audited system"),
+                                             ("w_inserted_tell", ORANGE, "an inserted error (with tell)"))):
+        ys = [np.mean([r[key] for r in tell if r["k"] == k]) for k in ks]
+        ax.plot(x, ys, color=color, linewidth=2, marker="o", markersize=6.5, markeredgecolor=SURFACE, markeredgewidth=1.2,
+                zorder=3, label=label)
+    ax.set_xlabel("Share of tells the supervisor's features expose (%)", fontsize=9, color=INK2)
+    ax.set_ylabel("Added to the report by one such line", fontsize=9, color=INK2)
+    ax.set_xlim(72, 101.5); ax.set_ylim(0, 1.1)
+    ax.legend(frameon=False, fontsize=8, labelcolor=INK2, loc="lower left")
+    fig.tight_layout(); _save(fig, path)
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("files", nargs="+"); ap.add_argument("--out", required=True)
     ap.add_argument("--estimator", default="analytic")
+    ap.add_argument("--sweeps", default="", help="folder with tell_sweep.json (adds fig_trained_tell)")
     a = ap.parse_args()
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
     groups = load(a.files)
@@ -202,4 +252,6 @@ if __name__ == "__main__":
     fig_main(groups, out / "fig_trained_main.png", a.estimator)
     fig_dials(groups, out / "fig_trained_dials.png", a.estimator)
     fig_weights(groups, out / "fig_trained_weights.png", a.estimator)
+    if a.sweeps:
+        fig_tell(a.sweeps, out / "fig_trained_tell.png")
     print(f"\nwritten to {out}/")
