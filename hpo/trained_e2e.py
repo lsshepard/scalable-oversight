@@ -35,6 +35,9 @@ class E2EConfig:
                                                 # report; "reinforce": each supervisor submits a noisy
                                                 # report and learns only from the payment it receives
     sigma: float = 0.05                         # exploration noise of the submitted reports ("reinforce")
+    alternate: int = 0                          # > 0: only one supervisor is updated at a time, in blocks
+                                                # of this many steps; the other is held fixed (and, with
+                                                # "reinforce", submits its report without noise)
 
 
 class NormedHead(nn.Module):
@@ -153,10 +156,15 @@ def train_e2e(model_name: str, train: dict, test: dict, rw: Reward, cfg: E2EConf
         D = [tr["D"][idx, 0].to(device), tr["D"][idx, v2].to(device)]
         K = [tr["K"][idx, 0].to(device), tr["K"][idx, v2].to(device)]
         other = [reports(i, tr_views[0 if i == 0 else v2], idx, False).detach() for i in range(2)]
+        active = (step // cfg.alternate) % 2 if cfg.alternate else None
         if cfg.estimator == "reinforce":   # submitted (noisy) reports of both supervisors
             sub = [other[i] + cfg.sigma * torch.randn(other[i].shape, generator=gen).to(device) for i in range(2)]
+            if active is not None:
+                sub[1 - active] = other[1 - active]
         opt.zero_grad(set_to_none=True)
         for i in range(2):
+            if active is not None and i != active:
+                continue
             F = reports(i, tr_views[0 if i == 0 else v2], idx, True)
             if cfg.supervised:
                 loss = ((F - K[i]) ** 2).mean()

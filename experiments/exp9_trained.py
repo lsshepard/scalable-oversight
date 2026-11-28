@@ -307,26 +307,28 @@ def cmd_e2e(args):
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
     out = pathlib.Path(args.out); out.parent.mkdir(parents=True, exist_ok=True)
     rows = json.loads(out.read_text()) if out.exists() else []
-    est = "end to end" + (", pay only" if args.estimator == "reinforce" else "")
-    done = {(r["label"], r["seed"], r["estimator"]) for r in rows}
+    est = ("end to end" + (", pay only" if args.estimator == "reinforce" else "")
+           + (", alternating" if args.alternate else ""))
+    done = {(r["label"], r["seed"], r["estimator"], r["eps"]) for r in rows}
     plan = [r for name in args.plans for r in PLANS[name] if not args.only or any(o == r[0] for o in args.only)]
     for label, cond, kind, b, eps in plan:
         sup = kind == "supervised"
+        eps = eps if args.eps is None else args.eps
         rw = Reward(name="supervised") if sup else reward(kind, b, eps)
         ex = dict(bounded=False) if sup else exact_prediction(ledger_cfg(cond), rw, plain=cond == "plain")
         train = sample_views(ledger_cfg(cond), args.n_train, args.seed, plain=cond == "plain")
         test = sample_views(ledger_cfg(cond), args.n_test, args.seed + 1, plain=cond == "plain")
-        for seed in range(args.seeds):
-            if (label, seed, est) in done:
+        for seed in (args.seed_ids or range(args.seeds)):
+            if (label, seed, est, eps) in done:
                 continue
             print(f"== {label} | views: {cond} | {kind} b={b:g} eps={eps:g} | {est}, seed {seed}", flush=True)
             t0 = time.time()
             cfg = E2EConfig(steps=args.steps, batch=args.batch, seed=seed, rank=args.rank, supervised=sup,
                             lr_adapter=args.lr_adapter, eval_every=args.eval_every, n_eval=args.n_test,
-                            estimator=args.estimator, sigma=args.sigma)
+                            estimator=args.estimator, sigma=args.sigma, alternate=args.alternate)
             res = train_e2e(args.model, train, test, rw, cfg, device, log=lambda m: print(m, flush=True))
             fin = res["final"]
-            rows.append(dict(label=label, cond=cond, kind=kind, b=b, eps=eps, estimator=est, seed=seed, sigma=args.sigma,
+            rows.append(dict(label=label, cond=cond, kind=kind, b=b, eps=eps, estimator=est, seed=seed, sigma=args.sigma, alternate=args.alternate,
                              model=args.model, seconds=time.time() - t0, exact=ex,
                              final={k: v for k, v in fin.items() if k != "shading"}, shading=fin["shading"],
                              shading_rms_gap=shading_distance(fin["shading"], ex["shading"]) if ex.get("bounded") else float("nan"),
@@ -381,6 +383,9 @@ if __name__ == "__main__":
     ee.add_argument("--eval-every", type=int, default=150)
     ee.add_argument("--estimator", default="analytic", choices=["analytic", "reinforce"])
     ee.add_argument("--sigma", type=float, default=0.05)
+    ee.add_argument("--alternate", type=int, default=0, help="update one supervisor at a time, in blocks of this many steps")
+    ee.add_argument("--eps", type=float, default=None, help="override the reporting charge of the plan rows")
+    ee.add_argument("--seed-ids", type=int, nargs="*", default=[], help="run exactly these seeds (instead of 0..seeds-1)")
     ee.add_argument("--device", default=""); ee.add_argument("--out", required=True)
     for q in (e, sy, tr, ee, pr):
         q.add_argument("--threads", type=int, default=0, help="CPU threads for torch (0 = default)")
